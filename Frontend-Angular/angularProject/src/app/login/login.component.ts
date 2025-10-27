@@ -41,7 +41,6 @@ export class LoginComponent implements OnInit {
 
   this.auth.login(this.form.value).subscribe({
     next: (res) => {
-      console.log(res);
       this.loading = false;
       this.router.navigateByUrl('/dashboard');
     },
