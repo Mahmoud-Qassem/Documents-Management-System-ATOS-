@@ -5,10 +5,10 @@ import com.dms.app.dto.PersonRegisterDto;
 import com.dms.app.dto.PersonResponseDto;
 import com.dms.app.model.Person;
 import org.mapstruct.*;
+import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface PersonMapper {
-
     //Register DTO to Entity
     Person toEntity(PersonRegisterDto dto);
 
@@ -28,3 +28,5 @@ public interface PersonMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromRegisterDto(PersonRegisterDto dto, @MappingTarget Person entity);
 }
+
+

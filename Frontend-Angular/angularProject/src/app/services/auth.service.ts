@@ -83,7 +83,8 @@ export class AuthService {
 
     // Fallback for network or unknown errors
     if (error.status === 0) {
-      message = 'Cannot connect to the server. Please check your backend.';
+      message = 'Try again later.';
+      console.log("Server is down!")
     }
 
     return throwError(() => new Error(message));

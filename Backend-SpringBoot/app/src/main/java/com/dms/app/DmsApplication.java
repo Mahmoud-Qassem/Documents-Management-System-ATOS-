@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @EnableJpaAuditing(auditorAwareRef = "auditAwareImpl")
 public class DmsApplication {
     public static void main(String[] args) {
+//        System.out.println("Hello world");
         SpringApplication.run(DmsApplication.class, args);
     }
 }

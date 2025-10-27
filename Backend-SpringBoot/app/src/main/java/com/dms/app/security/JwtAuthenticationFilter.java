@@ -42,16 +42,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-//            if()
-            logger.warn("Trying to authenticate using the provided JWT token !!");
+
             jwt = authHeader.substring(7);
             try{
                 jwtService.validateToken(jwt);
+                logger.warn("Trying to authenticate using the provided JWT token !!");
             }catch (Exception e){
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT");
                 return;
             }
-            email = jwtService.getEmailFromToken(jwt);
+            email = jwtService.extractEmail(jwt);
 
         }
 

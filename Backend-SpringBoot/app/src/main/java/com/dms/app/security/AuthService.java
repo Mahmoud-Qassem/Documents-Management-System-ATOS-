@@ -94,7 +94,8 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return jwtService.generateToken( dto);
+        Person person = personRepository.findByEmail(dto.getEmail());
+        return jwtService.generateToken( person.getEmail(), person.getNationalId(), person.getFirstName()+" "+person.getLastName(), person.getId());
     }
 
 

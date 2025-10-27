@@ -13,12 +13,14 @@ import java.util.stream.Collectors;
 
 @Service
 public class PersonService {
-
-    @Autowired
     private PersonRepository personRepository;
+    private PersonMapper personMapper;
 
     @Autowired
-    private PersonMapper personMapper;
+    public PersonService(PersonRepository personRepository, PersonMapper personMapper) {
+        this.personRepository = personRepository;
+        this.personMapper = personMapper;
+    }
 
     public List<PersonResponseDto> getAllUsers() {
 
