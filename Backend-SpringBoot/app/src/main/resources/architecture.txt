@@ -1,0 +1,48 @@
+dms/
+ ├── src/
+ │   ├── main/
+ │   │   ├── java/com/mahmooud/dms/
+ │   │   │   ├── controller/
+ │   │   │   │    ├── AuthController.java
+ │   │   │   │    ├── UserController.java
+ │   │   │   │    └── DocumentController.java
+ │   │   │   │
+ │   │   │   ├── service/
+ │   │   │   │    ├── AuthService.java
+ │   │   │   │    ├── UserService.java
+ │   │   │   │    └── DocumentService.java
+ │   │   │   │
+ │   │   │   ├── repository/
+ │   │   │   │    ├── UserRepository.java
+ │   │   │   │    └── DocumentRepository.java
+ │   │   │   │
+ │   │   │   ├── model/
+ │   │   │   │    ├── User.java
+ │   │   │   │    ├── Role.java
+ │   │   │   │    └── Document.java
+ │   │   │   │
+ │   │   │   ├── security/
+ │   │   │   │    ├── JwtAuthenticationFilter.java
+ │   │   │   │    ├── JwtService.java
+ │   │   │   │    ├── SecurityConfig.java
+ │   │   │   │    └── CustomUserDetailsService.java
+ │   │   │   │
+ │   │   │   ├── exception/
+ │   │   │   │    ├── GlobalExceptionHandler.java
+ │   │   │   │    └── ResourceNotFoundException.java
+ │   │   │   │
+ │   │   │   ├── dto/
+ │   │   │   │    ├── LoginRequest.java
+ │   │   │   │    ├── RegisterRequest.java
+ │   │   │   │    └── JwtResponse.java
+ │   │   │   │
+ │   │   │   └── DmsApplication.java
+ │   │   │
+ │   │   └── resources/
+ │   │        ├── application.yml
+ │   │        └── data.sql
+ │   │
+ │   └── test/
+ │        └── ...
+ │
+ └── pom.xml

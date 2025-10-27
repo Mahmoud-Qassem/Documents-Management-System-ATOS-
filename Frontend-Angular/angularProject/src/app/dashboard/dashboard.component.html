@@ -1,0 +1,51 @@
+<div class="dashboard-container">
+  <h2 class="page-title">Dashboard</h2>
+
+  <!-- 🗂️ Folders Section -->
+  <section class="folders-section">
+    <div class="section-header">
+      <h3 class="section-title">Folders</h3>
+      <button class="retry-button" *ngIf="foldersError()" (click)="fetchFolders()">Retry</button>
+    </div>
+
+    <p class="status-text" *ngIf="loadingFolders()">Loading folders...</p>
+    <p class="error-text" *ngIf="foldersError()">{{ foldersError() }}</p>
+
+    <div class="folders-grid" *ngIf="!loadingFolders() && !foldersError()">
+      <button
+        class="folder-tile"
+        *ngFor="let folder of folders() || []"
+        (click)="openFolder(folder)"
+        [attr.aria-label]="'Open folder ' + folder.folderName"
+      >
+        <span class="folder-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" class="icon-svg">
+            <path d="M6 16h18l4 6h30v26a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V16z" fill="#f4c430" />
+            <path d="M6 16h20l3 5H6z" fill="#ffd666" />
+            <path d="M6 26h52v22a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V26z" fill="#f1b000" />
+          </svg>
+        </span>
+        <span class="folder-name" [title]="folder.folderName">{{ folder.folderName }}</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 📄 Documents Section -->
+  <section class="documents-section" *ngIf="selectedFolder() as sel">
+    <div class="section-header">
+      <h3 class="section-title">Documents in {{ sel.folderName }}</h3>
+    </div>
+
+    <p class="status-text" *ngIf="loadingDocs()">Loading documents...</p>
+    <p class="error-text" *ngIf="docsError()">{{ docsError() }}</p>
+
+    <ul class="documents-list" *ngIf="!loadingDocs() && !docsError()">
+      <li class="document-row" *ngFor="let d of documents() || []">
+        {{ docDisplayName(d) }}
+      </li>
+      <li class="document-row empty" *ngIf="(documents() || []).length === 0">
+        No documents found.
+      </li>
+    </ul>
+  </section>
+</div>

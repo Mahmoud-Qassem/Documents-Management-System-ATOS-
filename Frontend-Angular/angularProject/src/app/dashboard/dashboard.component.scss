@@ -1,0 +1,24 @@
+:host{display:block;padding:24px}
+.dashboard-container{max-width:1024px;margin:0 auto}
+.page-title{margin:0 0 16px;font-size:1.5rem}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin:12px 0}
+.section-title{margin:0;font-size:1.125rem}
+.retry-button{background:var(--pill-accent, #0ea5e9);color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer}
+.status-text{color:#555;margin:8px 0}
+.error-text{color:#b91c1c;margin:8px 0}
+.folders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px}
+.folder-tile{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:box-shadow .2s,transform .06s}
+.folder-tile:active{transform:scale(.98)}
+.folder-tile:hover{box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.folder-icon{display:block;width:64px;height:48px;margin-bottom:8px}
+.icon-svg{width:100%;height:100%}
+.folder-name{display:block;font-size:.875rem;color:#111;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.documents-section{margin-top:24px}
+.documents-list{list-style:none;padding:0;margin:8px 0}
+.document-row{padding:8px 12px;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:8px;background:#fff}
+.document-row.empty{color:#555;text-align:center}
+
+@media (max-width: 600px){
+  .folders-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+  .folder-icon{width:56px;height:42px}
+}

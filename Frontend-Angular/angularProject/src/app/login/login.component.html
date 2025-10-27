@@ -1,0 +1,30 @@
+<div class="auth-wrapper">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+    <h2 class="auth-title">Sign in</h2>
+
+    <label class="field">
+      <span class="label">Email</span>
+      <input class="input" type="email" formControlName="email" />
+      <small class="error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+        <span *ngIf="form.get('email')?.errors?.['required']">Email is required.</span>
+        <span *ngIf="form.get('email')?.errors?.['email']">Invalid email.</span>
+      </small>
+    </label>
+
+    <label class="field">
+      <span class="label">Password</span>
+      <input class="input" type="password" formControlName="password" />
+      <small class="error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+        <span *ngIf="form.get('password')?.errors?.['required']">Password is required.</span>
+        <span *ngIf="form.get('password')?.errors?.['minlength']">Minimum 8 characters.</span>
+      </small>
+    </label>
+
+    <div class="actions">
+      <button class="btn" type="submit" [disabled]="loading">{{ loading ? 'Signing in...' : 'Sign in' }}</button>
+      <a class="link" routerLink="/register">Create account</a>
+    </div>
+
+    <p class="submit-error" *ngIf="error">{{ error }}</p>
+  </form>
+</div>
