@@ -26,6 +26,7 @@ export class RegisterComponent implements OnInit {
   loading = false;
   error: string | null = null;
   success: string | null = null;
+  serverErrors: Record<string, string> = {};
 
   constructor(
     private fb: FormBuilder,
@@ -34,6 +35,11 @@ export class RegisterComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (this.auth.isLoggedIn()) {
+      this.router.navigateByUrl('/dashboard');
+      return;
+    }
+
     this.form = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
       lastName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
@@ -54,6 +60,7 @@ submit() {
 
   this.loading = true;
   this.error = null;
+  this.serverErrors = {};
 
   this.auth.register(this.form.value).subscribe({
     next: (res) => {
@@ -61,9 +68,18 @@ submit() {
       this.success = res.message || 'Registration successful';
       setTimeout(() => this.router.navigate(['/login']), 1000);
     },
-    error: (err) => {
+    error: (err: any) => {
       this.loading = false;
-      this.error = err.message; // unified error message
+      if (err?.error && typeof err.error === 'object') {
+        const fe = err.error.fieldErrors || err.error.fieldError || null;
+        if (fe && typeof fe === 'object') {
+          this.serverErrors = fe;
+          return;
+        }
+        this.error = err.error.message || err.error.statusMsg || err.message || 'Registration failed';
+        return;
+      }
+      this.error = err?.message || 'Registration failed';
     }
   });
 }

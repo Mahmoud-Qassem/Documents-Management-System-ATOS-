@@ -18,4 +18,9 @@ export class DocumentsService {
   getDocuments(folderId: number | string): Observable<DocumentItem[]> {
     return this.http.get<DocumentItem[]>(`${this.base}/documents/${folderId}`);
   }
+
+  createDocument(name: string, type: string, folderId: number | string): Observable<DocumentItem> {
+    const payload = { name, type, folderId };
+    return this.http.post<DocumentItem>(`${this.base}/documents`, payload);
+  }
 }

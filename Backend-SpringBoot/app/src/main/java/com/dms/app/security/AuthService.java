@@ -1,72 +1,27 @@
 package com.dms.app.security;
 
+import com.dms.app.Constants;
 import com.dms.app.dto.PersonLoginDto;
 import com.dms.app.dto.PersonRegisterDto;
-import com.dms.app.dto.PersonResponseDto;
 import com.dms.app.mapper.PersonMapper;
 import com.dms.app.model.Person;
 import com.dms.app.repository.PersonRepository;
 import com.dms.app.service.PersonService;
-import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 
-//@Service
-//@RequiredArgsConstructor
-//public class AuthService {
-//    private final PersonRepository personRepository;
-//    private final PasswordEncoder passwordEncoder;
-//    private final JwtService jwtService;
-//    private final AuthenticationManager authenticationManager;
-//
-//    @Autowired
-//    public AuthService(PersonRepository personRepository,
-//                       PasswordEncoder passwordEncoder,
-//                       JwtService jwtService,
-//                       AuthenticationManager authenticationManager) {
-//        this.personRepository = personRepository;
-//        this.passwordEncoder = passwordEncoder;
-//        this.jwtService = jwtService;
-//        this.authenticationManager = authenticationManager;
-//    }
-//
-//    public JwtResponse register(PersonRegisterDto person) {
-//        User user = User.builder()
-//                .username(person.getFirstName())
-//                .email(person.getEmail())
-//                .password(passwordEncoder.encode(person.getPassword()))
-//                .build();
-//
-//        personRepository.save(user);
-//
-//        String token = jwtService.generateToken(user);
-//        return new JwtResponse(token);
-//    }
-//
-//    public JwtResponse login(LoginRequest request) {
-//        authenticationManager.authenticate(
-//                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-//        );
-//        User user = personRepository.findByUsername(request.getUsername())
-//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//        String token = jwtService.generateToken(user);
-//        return new JwtResponse(token);
-//    }
-//}
-
-
+@Slf4j
 @Service
 public class AuthService {
     private final PasswordEncoder passwordEncoder;
@@ -88,17 +43,27 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public String loginUser(PersonLoginDto dto) {
+
+    public Map<String, Object> loginUser(PersonLoginDto dto) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword())
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.info("User authenticated using email & password successfully !!");
+
         Person person = personRepository.findByEmail(dto.getEmail());
-        return jwtService.generateToken( person.getEmail(), person.getNationalId(), person.getFirstName()+" "+person.getLastName(), person.getId());
+        String accessToken = jwtService.generateAccessToken( person.getEmail(),
+                                        person.getNationalId(),
+                                        person.getFirstName()+" "+person.getLastName(),
+                                        person.getId());
+        String refreshToken = jwtService.generateRefreshToken(person.getEmail());
+        Map<String, Object> response = new HashMap<>();
+        response.put("accessToken", accessToken);
+        response.put("refreshToken", refreshToken);
+
+        return response;
     }
-
-
 
 
 
@@ -117,5 +82,27 @@ public class AuthService {
         person.setPassword(passwordEncoder.encode(person.getPassword()));
         personRepository.save( personMapper.toEntity(person) );
         return "User registered successfully";
+    }
+
+    public Map<String, Object> refreshToken(String refreshToken) {
+        Map<String, Object> response = new HashMap<>();
+
+        int checkCode = jwtService.validateRefreshToken(refreshToken);
+        if(checkCode == Constants.INVALID){
+            response.put("errorMessage", "Invalid refresh token");
+            return response;
+        }
+        else if(checkCode == Constants.EXPIRED){
+            response.put("errorMessage", "Expired refresh token");
+            return response;
+        }
+
+        String email = jwtService.extractRefreshTokenEmail(refreshToken);
+        Person person = personRepository.findByEmail(email);
+        String  accessT =jwtService.generateAccessToken(person.getEmail(), person.getNationalId(), person.getFirstName()+" "+person.getLastName(), person.getId());
+        String refreshT = jwtService.generateRefreshToken(person.getEmail());
+        response.put("accessToken", accessT);
+        response.put("refreshToken", refreshT);
+        return response;
     }
 }

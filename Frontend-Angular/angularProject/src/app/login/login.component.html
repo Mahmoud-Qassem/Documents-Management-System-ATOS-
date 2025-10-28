@@ -9,6 +9,7 @@
         <span *ngIf="form.get('email')?.errors?.['required']">Email is required.</span>
         <span *ngIf="form.get('email')?.errors?.['email']">Invalid email.</span>
       </small>
+      <small class="error" *ngIf="serverErrors['email']">{{ serverErrors['email'] }}</small>
     </label>
 
     <label class="field">
@@ -18,6 +19,7 @@
         <span *ngIf="form.get('password')?.errors?.['required']">Password is required.</span>
         <span *ngIf="form.get('password')?.errors?.['minlength']">Minimum 8 characters.</span>
       </small>
+      <small class="error" *ngIf="serverErrors['password']">{{ serverErrors['password'] }}</small>
     </label>
 
     <div class="actions">

@@ -1,0 +1,24 @@
+<nav class="site-navbar">
+  <div class="nav-inner">
+    <a class="brand" routerLink="/home" aria-label="Home">
+      <span class="brand-logo" aria-hidden="true">📁</span>
+      <span class="brand-name">DocDrive</span>
+    </a>
+
+    <div class="nav-actions">
+      <a class="nav-link" routerLink="/home">Home</a>
+
+      <ng-container *ngIf="isLoggedIn(); else loggedOut">
+        <a class="nav-link" routerLink="/profile">Profile</a>
+        <button class="nav-button" (click)="logout()">Logout</button>
+        
+      </ng-container>
+
+      <ng-template #loggedOut>
+        <a class="nav-link" routerLink="/login">Login</a>
+        <a class="nav-link" routerLink="/register">Register</a>
+      </ng-template>
+      
+    </div>
+  </div>
+</nav>

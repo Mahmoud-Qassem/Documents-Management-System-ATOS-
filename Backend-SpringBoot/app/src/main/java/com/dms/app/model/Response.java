@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 public class Response {
 
     private String statusCode;
-    private String statusMsg;
+    private String message;
 
 }

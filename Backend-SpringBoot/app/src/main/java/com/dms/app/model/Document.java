@@ -21,6 +21,7 @@ public class Document {
 //
     private String name;
     private String type;
+
 //    private String workspaceId;
 //    private String fileUrl; // or S3 path, etc.
 //    private boolean deleted = false;

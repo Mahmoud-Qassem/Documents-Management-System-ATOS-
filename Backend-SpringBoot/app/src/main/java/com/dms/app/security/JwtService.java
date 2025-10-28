@@ -1,14 +1,18 @@
 package com.dms.app.security;
 
+import com.dms.app.Constants;
 import com.dms.app.dto.PersonLoginDto;
 import com.dms.app.exception.InvalidJWTException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.bcel.Const;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.io.IOException;
 import java.io.InvalidClassException;
 import java.security.Key;
 import java.util.Date;
@@ -20,41 +24,71 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${dms.app.jwtSecret}")
-    private String jwtSecret;
+    @Value("${dms.app.access.jwtSecret}")
+    private String access_jwt_Secret;
+    @Value("${dms.app.refresh.jwtSecret}")
+    private String refresh_jwt_Secret;
 
     @Value("${dms.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
+    @Value("${dms.app.jwtRefreshExpirationMs}")
+    private int jwtRefreshExpirationMs;
 
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+
+    private SecretKey getAccessTokenSigningKey() {
+        return Keys.hmacShaKeyFor(access_jwt_Secret.getBytes());
     }
-    public Claims extractAllClaims(String token) {
+    private SecretKey getRefreshTokenSigningKey() {
+        return Keys.hmacShaKeyFor(refresh_jwt_Secret.getBytes());
+    }
+
+
+
+    public Claims extractAccessTokenClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(getAccessTokenSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
+    public <T> T extractAccessTokenClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAccessTokenClaims(token);
         return claimsResolver.apply(claims);
     }
-    public String extractNationalId(String token) {
-        return extractClaim(token, claims -> claims.get("nationalId", String.class));
+
+    public String extractAccessTokenEmail(String token) {
+        return extractAccessTokenClaim(token, Claims::getSubject);
     }
-    public String extractFullName(String token) {
-        return extractClaim(token, claims -> claims.get("fullName", String.class));
+    public Claims extractRefreshTokenClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getRefreshTokenSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
-    public Long extractId(String token) {
-        return extractClaim(token, claims -> claims.get("id", Long.class));
+    public <T> T extractRefreshTokenClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractRefreshTokenClaims(token);
+        return claimsResolver.apply(claims);
     }
-    public String extractEmail(String token) {
-        return extractClaim(token, Claims::getSubject);
+    public String extractRefreshTokenEmail(String token) {
+        return extractRefreshTokenClaim(token, Claims::getSubject);
     }
 
-    public String generateToken(String email, String nationalId, String fullName, Long id) {
+
+//    public boolean isExpired(String token){
+//            try {
+//                Jwts.parser()
+//                        .verifyWith(getSigningKey())
+//                        .build()
+//                        .parseSignedClaims(token);
+//            }catch (ExpiredJwtException e){
+//                return true;
+//            }
+//            return false;
+//    }
+
+    public String generateAccessToken(String email, String nationalId, String fullName, Long id) {
         final Date now = new Date();
         final Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
@@ -68,15 +102,52 @@ public class JwtService {
                 .issuedAt(now)
                 .claims(claims)
                 .expiration(expiryDate)
-                .signWith(getSigningKey())
+                .signWith(getAccessTokenSigningKey())
+                .compact();
+    }
+    public int validateAccessToken(String token){
+        try {
+            Jwts.parser()
+                    .verifyWith(getAccessTokenSigningKey())
+                    .build()
+                    .parseSignedClaims(token);
+        } catch (io.jsonwebtoken.ExpiredJwtException ex) {
+            log.warn("JWT expired");
+            return Constants.EXPIRED;
+        } catch (Exception ex) {
+            log.warn("JWT Invalid");
+            return Constants.INVALID;
+        }
+        return Constants.VALID;
+    }
+
+    public String generateRefreshToken(String email) {
+        final Date now = new Date();
+        final Date expiryDate = new Date(now.getTime() + jwtRefreshExpirationMs);
+
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getRefreshTokenSigningKey())
                 .compact();
     }
 
-    public boolean validateToken(String token){
-        Jwts.parser()
-                    .verifyWith(getSigningKey())
+    public int  validateRefreshToken(String refreshToken) {
+        try{
+            Jwts.parser()
+                    .verifyWith(getRefreshTokenSigningKey())
                     .build()
-                    .parseSignedClaims(token);
-        return true;
+                    .parseSignedClaims(refreshToken);
+        } catch (io.jsonwebtoken.ExpiredJwtException ex) {
+            log.warn("Refresh JWT expired");
+            return Constants.EXPIRED;
+        } catch (Exception ex) {
+            log.warn("Refresh JWT Invalid");
+            return Constants.INVALID;
+        }
+        return Constants.VALID;
     }
+
+
 }

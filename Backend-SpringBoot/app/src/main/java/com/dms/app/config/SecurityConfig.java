@@ -35,6 +35,7 @@ public class SecurityConfig {
         this.customUserDetailsService = customUserDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -42,14 +43,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .userDetailsService(customUserDetailsService)
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/auth/register").permitAll()
-                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/register", "/auth/login", "/auth/refresh-token").permitAll()
                         .anyRequest().authenticated())
-
-                .sessionManagement(Customizer -> Customizer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .httpBasic(Customizer.withDefaults()).build();
+                .httpBasic(Customizer.withDefaults())
+                .build();
     }
+
 
 
     @Bean
