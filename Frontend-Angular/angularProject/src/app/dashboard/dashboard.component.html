@@ -6,7 +6,7 @@
   <!-- Breadcrumbs -->
   <nav class="breadcrumbs" aria-label="Breadcrumb">
     <ng-container *ngFor="let c of pathStack(); let i = index; let last = last">
-      <button class="crumb" [class.active]="last" (click)="navigateToCrumb(i)">{{ c.name }}</button>
+      <span class="crumb" [class.active]="last" (click)="navigateToCrumb(i)">{{ c.name }}</span>
       <span class="crumb-sep" *ngIf="!last">/</span>
     </ng-container>
   </nav>
@@ -16,9 +16,7 @@
     <div class="section-header">
       <h3 class="section-title">Items</h3>
       <div class="section-actions">
-        <button class="icon-button" title="Add document" (click)="addDocument()" aria-label="Add document" [disabled]="currentCrumb.id === null">
-
-        </button>
+        <button class="icon-button" title="Add document" (click)="addDocument()" aria-label="Add document" [disabled]="currentCrumb.id === null"></button>
         <button class="retry-button" *ngIf="foldersError() || docsError()" (click)="loadActiveArea()">Retry</button>
       </div>
     </div>
@@ -27,9 +25,10 @@
     <p class="status-text" *ngIf="loadingFolders()">Loading folders...</p>
     <p class="error-text" *ngIf="foldersError()">{{ foldersError() }}</p>
 
-    <div class="drive-grid" *ngIf="!loadingFolders() && !foldersError()">
-      
+    <!-- Normal folders -->
+    <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingFolders() && !foldersError()">
 
+      <!-- Normal folders -->
       <div class="drive-item" *ngFor="let folder of folders() || []" (click)="openFolder(folder)">
         <div class="item-main">
           <div class="item-icon" aria-hidden="true">
@@ -41,18 +40,29 @@
           </div>
           <div class="item-meta">
             <div class="item-name" [title]="folder.name">{{ folder.name }}</div>
-            <div class="item-sub">Owner: {{ ownerMap()[folder.id.toString()] || '—' }}</div>
+            <div class="item-sub" [title]="folder.size">Size: {{ folder.size }} MB</div>
           </div>
         </div>
         <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleMenu(folder.id)" aria-label="Open menu">
           ⋯
         </button>
-        <div class="menu-panel" *ngIf="openMenuForId() === folder.id">
+        <div class="menu-panel" *ngIf="openMenuForId() === folder.id" (click)="$event.stopPropagation()">
           <button class="menu-item" (click)="downloadFolder(folder)">Download</button>
           <button class="menu-item" (click)="showDetails(folder)">Details</button>
+          <button class="menu-item" (click)="updateFolder(folder)">Rename</button>
           <button class="menu-item danger" (click)="deleteFolder(folder)">Delete</button>
         </div>
       </div>
+
+
+      <div class="drive-item empty" *ngIf="(folders() || []).length === 0">No folders</div>
+     <div>
+     </div>
+    </div>
+
+    <br>
+    <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingFolders() && !foldersError()">
+       <!-- Add Folder -->
       <button type="button" class="drive-item add-tile" (click)="$event.stopPropagation(); addFolder()" aria-label="Add folder">
         <div class="item-main">
           <div class="item-icon" aria-hidden="true">
@@ -72,25 +82,80 @@
           </div>
         </div>
       </button>
-      <div class="drive-item empty" *ngIf="(folders() || []).length === 0">No folders</div>
+
+      <div class="drive-item"  *ngIf="currentCrumb.id === null" (click)="openRecycleBin()">
+        <div class="item-main">
+          <div class="item-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" class="icon-svg">
+              <path d="M20 18h24l2 38H18l2-38zm8-6h8l2 6H26l2-6z" fill="#ccc"/>
+              <path d="M22 22h20v30H22z" fill="#999"/>
+            </svg>
+          </div>
+          <div class="item-meta">
+            <div class="item-name">Recycle Bin</div>
+            <div class="item-sub">Deleted folders</div>
+          </div>
+        </div>
+      </div>
+     </div>
+
+    <!-- Recycle Bin view -->
+<div class="drive-grid" *ngIf="inRecycleBin()">
+  <div class="drive-item" *ngFor="let folder of deletedFolders() || []">
+    <div class="item-main" (click)="$event.stopPropagation()">
+      <div class="item-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" class="icon-svg">
+          <path d="M20 18h24l2 38H18l2-38zm8-6h8l2 6H26l2-6z" fill="#ccc" />
+          <path d="M22 22h20v30H22z" fill="#999" />
+        </svg>
+      </div>
+      <div class="item-meta">
+        <div class="item-name">{{ folder.name }}</div>
+        <div class="item-sub">{{ folder.size }} MB</div>
+      </div>
     </div>
+
+    <!-- Menu toggle button -->
+    <button
+      type="button"
+      class="item-menu"
+      (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)"
+      aria-label="Open menu"
+    >
+      ⋯
+    </button>
+
+    <!-- Conditional menu -->
+    <div
+      class="menu-panel"
+      *ngIf="openRecycleBinMenuId() === folder.id"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        class="menu-item"
+        (click)="$event.stopPropagation(); restoreFolder(folder)"
+      >
+        Restore
+      </button>
+      <button
+        class="menu-item danger"
+        (click)="$event.stopPropagation(); hardDeleteFolder(folder)"
+      >
+        Delete permanently
+      </button>
+    </div>
+  </div>
+
+  <div class="drive-item empty" *ngIf="(deletedFolders() || []).length === 0">
+    Recycle Bin is empty
+  </div>
+</div>
+
 
     <!-- Documents list -->
     <section class="documents-section" *ngIf="(documents() || []).length || currentCrumb.id !== null">
       <div class="docs-header">
         <h4 class="docs-title">Documents</h4>
-        <!-- <button class="icon-button" (click)="addDocument()" [disabled]="currentCrumb.id === null" aria-label="Add document">
-          <svg viewBox="0 0 64 64" class="icon-svg add-doc">
-            <rect x="14" y="10" width="36" height="44" rx="4" fill="#c7d2fe" />
-            <rect x="18" y="18" width="28" height="4" rx="2" fill="#93c5fd" />
-            <rect x="18" y="26" width="24" height="4" rx="2" fill="#93c5fd" />
-            <rect x="18" y="34" width="20" height="4" rx="2" fill="#93c5fd" />
-            <g class="plus-overlay" fill="#111">
-              <rect x="30" y="26" width="4" height="16" rx="2"></rect>
-              <rect x="23" y="33" width="18" height="4" rx="2"></rect>
-            </g>
-          </svg>
-        </button> -->
       </div>
       <p class="status-text" *ngIf="loadingDocs()">Loading documents...</p>
       <p class="error-text" *ngIf="docsError()">{{ docsError() }}</p>
@@ -99,7 +164,6 @@
         <li class="document-row" *ngFor="let d of documents() || []">{{ docDisplayName(d) }}</li>
         <li class="document-row empty" *ngIf="(documents() || []).length === 0">No documents found.</li>
       </ul>
-      
     </section>
   </section>
 
@@ -111,7 +175,8 @@
     </div>
     <div class="details-body">
       <p><strong>Name:</strong> {{ det.name }}</p>
-      <p><strong>Owner:</strong> {{ ownerMap()[det.id.toString()] }}</p>
+      <p><strong>Owner:</strong> {{ det.ownerName }}</p>
+      <p><strong>Size:</strong> {{ det.size }} MB</p>
     </div>
   </aside>
 </div>

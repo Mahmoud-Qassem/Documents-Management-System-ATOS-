@@ -2,31 +2,31 @@ package com.dms.app.model;
 
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import org.springframework.data.annotation.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-
-
-@Document(collection = "folders")
+@Document(collection = "documents")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Folder extends MongoBaseEntity {
+@EnableMongoAuditing
+public class Files extends MongoBaseEntity {
+
     @Id
     private String id;
-    private String name;
-    private String path;
-    private String parentId;
-    private boolean deleted;
-    private Long size;
-    private String ownerName;
-    private String ownerId;
 
+    private String name;
+    private String type;
+    private Long size;
+    private String folderId;
+    private String filePath;
+    private boolean deleted;
+    private String ownerId;
+    private String ownerName;
 }

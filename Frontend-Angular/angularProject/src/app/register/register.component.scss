@@ -1,10 +1,10 @@
 :host { display:block; padding:24px; }
 
-.auth-wrapper { max-width:720px; margin:40px auto; background:#fff; border-radius:8px; padding:24px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+.auth-wrapper { max-width:720px; margin:40px auto; background:#fff; border-radius:8px; padding:24px; box-shadow:8px 8px 16px 16px rgba(0,0,0,0.06); }
 
-.two-col { display:flex; gap:12px; }
+.two-col { display:flex; gap:3%;padding-right: 10px; }
 
-.field { display:block; margin-bottom:12px; flex:1; }
+.field { display:block; margin-bottom:12px; flex:1;  }
 
 .label { display:block; margin-bottom:6px; font-size:0.875rem; color:#333; }
 

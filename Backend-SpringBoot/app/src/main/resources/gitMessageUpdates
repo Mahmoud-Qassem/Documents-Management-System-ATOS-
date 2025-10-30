@@ -1,0 +1,10 @@
+- Implement creating/deleting nested folders recursively
+- Enhanced the FolderServices
+- Implement renaming folders
+- Enhanced the endpoints of the FolderController
+- Implemented the endpoints of the DocumentController
+- Added swagger dependencies and configuration
+___
+- Added the RecycleBin at the Frontend making the user
+  able to move the document to the RecycleBin and restore it or delete it permanently
+- Enhance the Angular frontend to be compatible with the new features at the backend

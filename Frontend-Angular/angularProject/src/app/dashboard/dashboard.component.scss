@@ -28,7 +28,7 @@
 .add-tile{justify-content:flex-start}
 .item-meta{min-width:0}
 .item-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item-sub{font-size:.8rem;color:#666}
+.item-sub{font-size:.7rem;color:#230458;}
 .item-menu{background:transparent;border:none;border-radius:6px;width:32px;height:32px;line-height:32px;text-align:center;font-size:20px;cursor:pointer}
 .menu-panel{position:absolute;top:42px;right:10px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.08);display:flex;flex-direction:column;min-width:160px;z-index:10}
 .menu-item{background:transparent;border:none;text-align:left;padding:8px 12px;cursor:pointer}
@@ -57,6 +57,43 @@
 .folder-tile:hover{box-shadow:0 6px 18px rgba(0,0,0,.06)}
 .folder-icon{display:block;width:64px;height:48px;margin-bottom:8px}
 .folder-name{display:block;font-size:.875rem;color:#111;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toggle-bin {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.toggle-bin:hover {
+  background: #1e40af;
+}
+
+.recycle-bin .bin-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recycle-bin .restore-btn {
+  background: #22c55e;
+  border: none;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.recycle-bin .delete-btn {
+  background: #dc2626;
+  border: none;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
 
 @media (max-width: 600px){
   .drive-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}

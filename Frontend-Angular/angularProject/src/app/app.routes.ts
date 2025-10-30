@@ -10,7 +10,12 @@ export const routes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  // Dashboard root (My Drive)
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  // Dashboard recycle bin view
+  { path: 'dashboard/bin', component: DashboardComponent, canActivate: [authGuard] },
+  // Dashboard folder view by id
+  { path: 'dashboard/:folderId', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: '**', redirectTo: 'home' }

@@ -1,20 +1,13 @@
 package com.dms.app.security;
 
 import com.dms.app.Constants;
-import com.dms.app.dto.PersonLoginDto;
-import com.dms.app.exception.InvalidJWTException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.bcel.Const;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.io.IOException;
-import java.io.InvalidClassException;
-import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,6 +66,24 @@ public class JwtService {
     }
     public String extractRefreshTokenEmail(String token) {
         return extractRefreshTokenClaim(token, Claims::getSubject);
+    }
+
+    public String extractAccessTokenNationalId(String token) {
+        if(token != null && token.startsWith("Bearer "))
+            token = token.substring(7);
+        return extractAccessTokenClaim(token, claims -> claims.get("nationalId", String.class));
+
+
+    }
+    public String extractAccessTokenFullName(String token) {
+        if(token != null && token.startsWith("Bearer "))
+            token = token.substring(7);
+        return extractAccessTokenClaim(token, claims -> claims.get("fullName", String.class));
+    }
+    public Long extractAccessTokenId(String token) {
+        if(token != null && token.startsWith("Bearer "))
+            token = token.substring(7);
+        return extractAccessTokenClaim(token, claims -> claims.get("id", Long.class));
     }
 
 

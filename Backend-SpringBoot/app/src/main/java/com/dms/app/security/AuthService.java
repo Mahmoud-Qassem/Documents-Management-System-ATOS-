@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,6 +82,14 @@ public class AuthService {
         }
         person.setPassword(passwordEncoder.encode(person.getPassword()));
         personRepository.save( personMapper.toEntity(person) );
+
+        // Create folder for the new person
+        String basePath = "E:\\06_Java\\Fullstack-dms\\Backend-SpringBoot\\UsersUploads";
+        String folderName = person.getNationalId() + "_root";
+        File folder = new File(basePath, folderName);
+        boolean created = folder.mkdirs();
+
+
         return "User registered successfully";
     }
 
