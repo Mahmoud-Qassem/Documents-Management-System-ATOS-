@@ -4,4 +4,4 @@ Below is a **real screenshot** taken directly from the working **Document Manage
 It shows part of the backend structure in the Spring Boot module — specifically the `resources` directory —  
 demonstrating the implemented functionality for creating and deleting nested folders recursively.
 
-![Document Management System Screenshot](app/src/main/resources/screenshot.png)
+![Document Management System Screenshot](Backend-SpringBoot/app/src/main/resources/screenshot.png)
