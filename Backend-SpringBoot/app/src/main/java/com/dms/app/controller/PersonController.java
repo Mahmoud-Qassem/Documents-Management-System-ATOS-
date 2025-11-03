@@ -5,6 +5,7 @@ import com.dms.app.security.JwtService;
 import com.dms.app.service.PersonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,11 +30,13 @@ public class PersonController {
     }
 
     @GetMapping("/nationalId/{nationalId}")
+//    @PreAuthorize("hasPermission(#nationalId, 'PERSON', 'READ')")
     public ResponseEntity<PersonResponseDto> getPersonByNationalId(@PathVariable String nationalId) {
         return ResponseEntity.ok(personService.getPersonByNationalId(nationalId));
     }
 
     @GetMapping("/email/{email}")
+    @PreAuthorize("hasPermission(#email, 'PERSON', 'READ')")
     public ResponseEntity<PersonResponseDto> getPersonByEmail(@PathVariable String email) {
         return ResponseEntity.ok(personService.getPersonByEmail(email));
     }

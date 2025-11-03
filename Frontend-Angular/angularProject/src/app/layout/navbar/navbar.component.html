@@ -4,11 +4,15 @@
       <span class="brand-logo" aria-hidden="true">📁</span>
       <span class="brand-name">DocDrive</span>
     </a>
+    <p class="hello-message" *ngIf="userName() && isLoggedIn()">{{ "Hello, " + userName() + "!" }}</p>
 
     <div class="nav-actions">
       <a class="nav-link" routerLink="/home">Home</a>
 
       <ng-container *ngIf="isLoggedIn(); else loggedOut">
+        <!-- add Hello message -->
+         
+
         <a class="nav-link" routerLink="/profile">Profile</a>
         <button class="nav-button" (click)="logout()">Logout</button>
         

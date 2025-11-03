@@ -20,4 +20,8 @@ export class NavbarComponent {
     this.auth.logout();
     this.router.navigateByUrl('/login');
   }
+
+  userName() {
+    return this.auth.getUserName();
+  }
 }

@@ -1,137 +1,155 @@
 package com.dms.app.service;
 
+import com.dms.app.exception.CanNotCreateFolderException;
+import com.dms.app.exception.CanNotDeleteFolderException;
 import com.dms.app.model.Folder;
-import com.dms.app.model.Person;
-import com.dms.app.repository.DocumentRepository;
+import com.dms.app.model.UserFile;
 import com.dms.app.repository.FolderRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.apache.commons.io.FileUtils;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
-
+import java.util.UUID;
 @Slf4j
 @Service
 public class FolderService {
+
     @Value("${spring.data.mongodb.page-size}")
-    int pageSize;
+    private int pageSize;
     @Value("${local.folder.path}")
-    String localFolderPath;
+    private String localFolderPath;
+
     private final FolderRepository folderRepository;
-    private final DocumentRepository documentRepository;
+    private final UserFileService userFileService;
+    private final StorageManager storageManager;
+    private Pageable limit;
 
     @Autowired
-    public FolderService(FolderRepository folderRepository, DocumentRepository documentRepository) {
+    public FolderService(FolderRepository folderRepository,
+                         UserFileService userFileService,
+                         StorageManager storageManager) {
         this.folderRepository = folderRepository;
-        this.documentRepository = documentRepository;
+        this.userFileService = userFileService;
+        this.storageManager = storageManager;
+    }
+
+    @PostConstruct
+    public void init() {
+        limit = PageRequest.of(0, pageSize);
     }
 
     public Folder createFolder(Folder folder, String ownerId, String ownerName) {
+        try {
+            // Construct folder path
+            String uniqueId = UUID.randomUUID().toString();
+            String basePath = localFolderPath + "\\" + ownerId + "_root\\" + folder.getPath();
+            String folderPath = basePath + uniqueId;
 
-        String folderPath = localFolderPath + "\\" + ownerId + "_root" + "\\" + folder.getPath();
-        if(folder.getParentId() == "root"){
-            folder.setParentId( ownerId + "_root");
+            if ("root".equals(folder.getParentId())) {
+                folder.setParentId(ownerId + "_root");
+            }
+
+            folder.setId(uniqueId);
+            folder.setPath(folderPath);
+            folder.setDeleted(false);
+            folder.setOwnerId(ownerId);
+            folder.setOwnerName(ownerName);
+            folder.setSize(0L);
+
+            folderRepository.save(folder);
+
+            storageManager.createFolder(folderPath);
+            return folder;
+
+        } catch (Exception ex) {
+            log.error("Failed to create folder for user {}: {}", ownerId, ex.getMessage(), ex);
+            throw new CanNotCreateFolderException("Failed to create folder: " + ex.getMessage());
         }
-        folder.setDeleted(false);
-        folder.setPath(folderPath);
-        folder.setOwnerId(ownerId);
-        folder.setOwnerName(ownerName);
-        folder.setSize(0L);
-        folder = folderRepository.save(folder);
-
-        // create a physical folder in the local file system
-        String folderName = folder.getId() ;
-        File localFolder = new File(folder.getPath(), folderName);
-        localFolder.mkdirs();
-        return folder;
     }
-
-    public Folder getFolderById(String folderId) {
-        return folderRepository.findById(folderId).orElse(null);
-    }
-
-    public List<Folder> getFoldersByOwnerId(String ownerId) {
-        Pageable limit = PageRequest.of(0, pageSize);
-        return folderRepository.findAllByOwnerIdAndDeleted(ownerId, false, limit);
-    }
-
 
     public Folder updateFolder(String folderId, Folder folder) {
-        Folder existingFolder = folderRepository.findById(folderId).orElse(null);
-        if (existingFolder != null) {
-            existingFolder.setName(folder.getName());
-            return folderRepository.save(existingFolder);
-        }
-        return null;
+        Folder existing = folderRepository.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
+
+        existing.setName(folder.getName());
+        return folderRepository.save(existing);
     }
 
     public Folder deleteFolder(String folderId) {
-        Folder existingFolder = folderRepository.findById(folderId).orElse(null);
-        if (existingFolder != null) {
-            existingFolder.setDeleted(true);
-            return folderRepository.save(existingFolder);
-        }
-        return null;
+        Folder existing = folderRepository.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
+
+        existing.setDeleted(true);
+        return folderRepository.save(existing);
     }
 
     public Folder deleteFolderHard(String folderId) {
-        Folder existingFolder = folderRepository.findById(folderId).orElse(null);
+        Folder existing = folderRepository.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
 
-        if (existingFolder != null) {
-            String folderPath = existingFolder.getPath();
-            File folder = new File(folderPath+existingFolder.getId() );
-            if (folder.exists()) {
-                try {
-                    deleteRecursively(folder);
-                    log.info("Deleted physical folder: {}", folderPath+existingFolder.getId());
-                } catch (IOException e) {
-                    log.error("Failed to delete folder physically: {}", folderPath+existingFolder.getId(), e);
-                }
+        // delete all files
+        List<UserFile> files = userFileService.getFilesByFolderId(folderId);
+        for (UserFile file : files) {
+            try {
+                userFileService.deleteFileHard(file.getId());
+            } catch (Exception ex) {
+                log.error("Failed to delete file {} in folder {}: {}", file.getId(), folderId, ex.getMessage());
+                throw new CanNotDeleteFolderException("Failed to delete file: " + file.getId());
             }
-            folderRepository.delete(existingFolder);
-            return existingFolder;
         }
-        return null;
-    }
-    private void deleteRecursively(File file) throws IOException {
-        if (file.isDirectory()) {
-            for (File subFile : Objects.requireNonNull(file.listFiles())) {
-                deleteRecursively(subFile);
-                folderRepository.deleteById(subFile.getName());
-            }
-            folderRepository.deleteById(file.getName());
+
+        List<Folder> subFolders = folderRepository.findAllByParentId(folderId);
+        for (Folder sub : subFolders) {
+            deleteFolderHard(sub.getId());
         }
-        if (!file.delete()) {
-            throw new IOException("Failed to delete file: " + file.getAbsolutePath());
+
+        folderRepository.delete(existing);
+
+        try {
+            storageManager.deleteFolder(existing.getPath());
+        } catch (Exception ex) {
+            log.error("Storage deletion error for folder {}: {}", existing.getId(), ex.getMessage());
+            throw new CanNotDeleteFolderException("Failed to delete folder from storage: " + existing.getId());
         }
+
+        return existing;
     }
 
     public List<Folder> getDeletedFolders(String ownerId) {
-        Pageable limit = PageRequest.of(0, pageSize);
         return folderRepository.findAllByOwnerIdAndDeleted(ownerId, true, limit);
     }
 
     public Folder restoreFolder(String folderId) {
-        Folder existingFolder = folderRepository.findById(folderId).orElse(null);
-        if (existingFolder != null) {
-            // update the deleted field to false
-            existingFolder.setDeleted(false);
-            return folderRepository.save(existingFolder);
-        }
-        return null;
+        Folder existing = folderRepository.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
+
+        existing.setDeleted(false);
+        return folderRepository.save(existing);
     }
 
     public List<Folder> getFoldersByParentId(String ownerId, String parentId) {
-        if(parentId == "root"){
-            parentId= ownerId + "_root";
+        if ("root".equals(parentId)) {
+            parentId = ownerId + "_root";
         }
-        return folderRepository.findAllByParentIdAndDeleted(parentId, false);
+        return folderRepository.findAllByParentIdAndDeleted(parentId, false, limit);
+    }
+
+    public Folder getFolderById(String folderId) {
+        return folderRepository.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
+    }
+
+    public List<Folder> getFoldersByOwnerId(String ownerId) {
+        return folderRepository.findAllByOwnerIdAndDeleted(ownerId, false, limit);
+    }
+
+    public String getFolderPath(String folderId) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
+        return folder.getPath();
     }
 }

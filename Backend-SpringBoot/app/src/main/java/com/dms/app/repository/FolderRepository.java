@@ -9,9 +9,11 @@ import java.util.List;
 
 @Repository
 public interface FolderRepository extends MongoRepository<Folder, String> {
+    // by OWNER id and deleted
     List<Folder> findAllByOwnerIdAndDeleted(String ownerId, boolean deleted, Pageable pageable);
-
     List<Folder> findAllByParentId(String folderId);
+    // by parentId and deleted
+    List<Folder> findAllByParentIdAndDeleted(String folderId, boolean b, Pageable pageable);
 
-    List<Folder> findAllByParentIdAndDeleted(String folderId, boolean b);
+    boolean existsByOwnerIdAndDeleted(String ownerId, boolean b);
 }

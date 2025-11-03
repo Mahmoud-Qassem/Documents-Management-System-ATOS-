@@ -15,10 +15,6 @@
   <section class="active-area">
     <div class="section-header">
       <h3 class="section-title">Items</h3>
-      <div class="section-actions">
-        <button class="icon-button" title="Add document" (click)="addDocument()" aria-label="Add document" [disabled]="currentCrumb.id === null"></button>
-        <button class="retry-button" *ngIf="foldersError() || docsError()" (click)="loadActiveArea()">Retry</button>
-      </div>
     </div>
 
     <!-- Folders grid -->
@@ -100,7 +96,10 @@
      </div>
 
     <!-- Recycle Bin view -->
+<!-- Recycle Bin view -->
 <div class="drive-grid" *ngIf="inRecycleBin()">
+
+  <!-- Deleted Folders -->
   <div class="drive-item" *ngFor="let folder of deletedFolders() || []">
     <div class="item-main" (click)="$event.stopPropagation()">
       <div class="item-icon" aria-hidden="true">
@@ -114,60 +113,88 @@
         <div class="item-sub">{{ folder.size }} MB</div>
       </div>
     </div>
-
-    <!-- Menu toggle button -->
-    <button
-      type="button"
-      class="item-menu"
-      (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)"
-      aria-label="Open menu"
-    >
-      ⋯
-    </button>
-
-    <!-- Conditional menu -->
-    <div
-      class="menu-panel"
-      *ngIf="openRecycleBinMenuId() === folder.id"
-      (click)="$event.stopPropagation()"
-    >
-      <button
-        class="menu-item"
-        (click)="$event.stopPropagation(); restoreFolder(folder)"
-      >
-        Restore
-      </button>
-      <button
-        class="menu-item danger"
-        (click)="$event.stopPropagation(); hardDeleteFolder(folder)"
-      >
-        Delete permanently
-      </button>
+    <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)" aria-label="Open menu">⋯</button>
+    <div class="menu-panel" *ngIf="openRecycleBinMenuId() === folder.id" (click)="$event.stopPropagation()">
+      <button class="menu-item" (click)="$event.stopPropagation(); restoreFolder(folder)">Restore</button>
+      <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteFolder(folder)">Delete permanently</button>
     </div>
   </div>
 
-  <div class="drive-item empty" *ngIf="(deletedFolders() || []).length === 0">
+  <!-- Deleted Documents -->
+  <div class="drive-item" *ngFor="let doc of deletedDocs() || []">
+    <div class="item-main" (click)="$event.stopPropagation()">
+      <div class="item-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" class="icon-svg">
+          <path d="M14 8h28l8 8v40H14z" fill="#60a5fa"/>
+          <path d="M42 8v12h12" fill="#93c5fd"/>
+        </svg>
+      </div>
+      <div class="item-meta">
+        <div class="item-name" [title]="docDisplayName(doc)">{{ docDisplayName(doc) }}</div>
+        <div class="item-sub" [title]="doc.type">{{ doc.type || 'document' }}</div>
+      </div>
+    </div>
+    <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(doc.id)" aria-label="Open menu">⋯</button>
+    <div class="menu-panel" *ngIf="openRecycleBinMenuId() === doc.id" (click)="$event.stopPropagation()">
+      <button class="menu-item" (click)="$event.stopPropagation(); restoreDocument(doc)">Restore</button>
+      <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteDocument(doc)">Delete permanently</button>
+    </div>
+  </div>
+
+  <div class="drive-item empty" *ngIf="(deletedFolders() || []).length === 0 && (deletedDocs() || []).length === 0">
     Recycle Bin is empty
   </div>
 </div>
 
 
-    <!-- Documents list -->
-    <section class="documents-section" *ngIf="(documents() || []).length || currentCrumb.id !== null">
+
+    <!-- Documents grid -->
+    <section class="documents-section" *ngIf="(files() || []).length || currentCrumb.id !== null">
       <div class="docs-header">
         <h4 class="docs-title">Documents</h4>
+
       </div>
       <p class="status-text" *ngIf="loadingDocs()">Loading documents...</p>
       <p class="error-text" *ngIf="docsError()">{{ docsError() }}</p>
 
-      <ul class="documents-list" *ngIf="!loadingDocs() && !docsError()">
-        <li class="document-row" *ngFor="let d of documents() || []">{{ docDisplayName(d) }}</li>
-        <li class="document-row empty" *ngIf="(documents() || []).length === 0">No documents found.</li>
-      </ul>
+      <div class="drive-grid" *ngIf="!loadingDocs() && !docsError()">
+        <div class="drive-item" *ngFor="let d of files() || []">
+          <div class="item-main">
+            <div class="item-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" class="icon-svg">
+                <path d="M14 8h28l8 8v40H14z" fill="#60a5fa"/>
+                <path d="M42 8v12h12" fill="#93c5fd"/>
+              </svg>
+            </div>
+            <div class="item-meta">
+              <div class="item-name" [title]="docDisplayName(d)">{{ docDisplayName(d) }}</div>
+              <div class="item-sub" [title]="d.type || ''">{{ d.type || 'document' }}</div>
+            </div>
+          </div>
+          <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleDocMenu(d.id)" aria-label="Open menu">⋯</button>
+          <div class="menu-panel" *ngIf="openDocMenuForId() === d.id" (click)="$event.stopPropagation()">
+            <button class="menu-item" (click)="downloadDocument(d)">Download</button>
+            <button class="menu-item" (click)="showDocDetails(d)">Details</button>
+            <button class="menu-item danger" (click)="deleteDocument(d)">Delete</button>
+          </div>
+        </div>
+        <div class="drive-item empty" *ngIf="(files() || []).length === 0">No documents found.</div>
+
+        <div class="section-actions">
+        <input #documentInput type="file" class="hidden-document-input" accept="*/*" (change)="onDocumentSelected($event)">
+        <button class="icon-button" title="Upload document" (click)="triggerUpload(documentInput)" aria-label="Upload document" [disabled]="currentCrumb.id === null">
+          <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
+            <path fill="#111" d="M5 20h14a2 2 0 0 0 2-2v-4h-2v4H5v-4H3v4a2 2 0 0 0 2 2zm7-16-5 5h3v6h4v-6h3l-5-5z"/> 
+          </svg>
+        </button>
+        <button class="retry-button" *ngIf="foldersError() || docsError()" (click)="loadActiveArea()">Retry</button>
+      </div>
+
+      </div>
     </section>
   </section>
 
-  <!-- Details side panel -->
+  <!-- Details side panel (folder) -->
   <aside class="details-panel" *ngIf="showDetailsFor() as det">
     <div class="details-header">
       <h4 class="details-title">Folder details</h4>
@@ -177,6 +204,20 @@
       <p><strong>Name:</strong> {{ det.name }}</p>
       <p><strong>Owner:</strong> {{ det.ownerName }}</p>
       <p><strong>Size:</strong> {{ det.size }} MB</p>
+    </div>
+  </aside>
+
+  <!-- Details side panel (document) -->
+  <aside class="details-panel" *ngIf="showDocDetailsFor() as ddet">
+    <div class="details-header">
+      <h4 class="details-title">Document details</h4>
+      <button class="close-btn" (click)="showDocDetailsFor.set(null)">Close</button>
+    </div>
+    <div class="details-body">
+      <p><strong>Name:</strong> {{ docDisplayName(ddet) }}</p>
+      <p><strong>Type:</strong> {{ ddet.type || 'document' }}</p>
+      <p><strong>Size:</strong> {{ ddet.size | documentSize }}</p>
+      <p><strong>Owner:</strong> {{ ddet.ownerName }}</p>
     </div>
   </aside>
 </div>

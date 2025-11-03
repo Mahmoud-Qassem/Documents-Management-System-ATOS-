@@ -43,12 +43,16 @@ export class AuthService {
           this.setRefreshToken(response.refreshToken);
         }
         this.authState.set(this.isLoggedIn());
+        localStorage.setItem('username', payload.email);
       }),
       catchError(this.handleError)
     );
   }
   getBaseUrl() {
     return this.base;
+  }
+  getUserName() {
+    return localStorage.getItem('username');
   }
 
   /** ------------------ REGISTER ------------------ **/
@@ -91,7 +95,7 @@ export class AuthService {
   clearRefreshToken() {
     try {
       localStorage.removeItem(this.tokenKey + '_refresh');
-    } catch {}
+    } catch { }
   }
 
   /** ------------------ AUTH STATE ------------------ **/
@@ -136,7 +140,7 @@ export class AuthService {
   clearToken() {
     try {
       localStorage.removeItem(this.tokenKey);
-    } catch {}
+    } catch { }
   }
 
   /** ------------------ ERROR HANDLER ------------------ **/

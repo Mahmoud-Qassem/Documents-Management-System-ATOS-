@@ -1,13 +1,12 @@
 package com.dms.app.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Folder extends MongoBaseEntity {
-    @Id
+
     private String id;
     private String name;
     private String path;
@@ -28,5 +27,4 @@ public class Folder extends MongoBaseEntity {
     private Long size;
     private String ownerName;
     private String ownerId;
-
 }

@@ -1,4 +1,4 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-documents for more about ignoring documents.
 
 # Compiled output
 /dist
@@ -38,6 +38,6 @@ yarn-error.log
 testem.log
 /typings
 
-# System files
+# System documents
 .DS_Store
 Thumbs.db

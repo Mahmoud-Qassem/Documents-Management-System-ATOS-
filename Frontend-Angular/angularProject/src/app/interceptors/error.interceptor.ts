@@ -10,6 +10,7 @@ export class ErrorInterceptor implements HttpInterceptor {
         
         let message = 'An unexpected error occurred';
         if (error.error?.statusMsg) message = error.error.statusMsg;
+        if (error.error?.message) message = error.error.statusMsg;
         else if (error.message) message = error.message;
         return throwError(() => new Error(message));
       })

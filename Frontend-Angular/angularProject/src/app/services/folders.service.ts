@@ -17,7 +17,7 @@ export interface Folder {
 export class FoldersService {
   private base = 'http://localhost:8080/api/folders';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   /** Get all folders for the logged-in owner (client can filter by parentId) */
   getFolders(): Observable<Folder[]> {
@@ -44,7 +44,7 @@ export class FoldersService {
   createFolder(name: string, parentId: string | null = null, currentPath: string): Observable<Folder> {
     const payload: any = { name };
     if (parentId) payload.parentId = parentId;
-    else payload.parentId  = "root";
+    else payload.parentId = "root";
     // Use the property name "path" as the backend reads folder.getPath() when building full path
     payload.path = currentPath || '';
     return this.http.post<Folder>(this.base, payload);

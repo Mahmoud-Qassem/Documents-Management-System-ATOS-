@@ -17,7 +17,7 @@ export class ProfileComponent implements OnInit {
   error: string | null = null;
   success: string | null = null;
 
-  constructor(private fb: FormBuilder, private auth: AuthService) {}
+  constructor(private fb: FormBuilder, private auth: AuthService) { }
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -34,7 +34,7 @@ export class ProfileComponent implements OnInit {
       next: (profile: ProfilePayload) => {
         this.form.patchValue(profile || {});
       },
-      error: () => {}
+      error: () => { }
     });
   }
 

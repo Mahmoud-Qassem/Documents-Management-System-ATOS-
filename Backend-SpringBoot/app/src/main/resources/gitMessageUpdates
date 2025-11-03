@@ -1,10 +1,7 @@
-- Implement creating/deleting nested folders recursively
-- Enhanced the FolderServices
-- Implement renaming folders
-- Enhanced the endpoints of the FolderController
-- Implemented the endpoints of the DocumentController
-- Added swagger dependencies and configuration
-___
-- Added the RecycleBin at the Frontend making the user
-  able to move the document to the RecycleBin and restore it or delete it permanently
-- Enhance the Angular frontend to be compatible with the new features at the backend
+The process of uploading file goes as the following:
+
+- The user upload the file.
+- We Create a unique name for it, Extract the type from the uploaded file.
+- We create the file in the file system with the unique name as the name and the type as the extension.
+- We create the file in the database with that unique name as id for that file and store the original name.
+
