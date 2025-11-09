@@ -9,8 +9,10 @@ import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,13 +45,36 @@ public class UserFileService {
     public void init() {
         limit = PageRequest.of(0, pageSize);
     }
+    // search by name
+    public List<UserFile> searchFilesByName(String ownerId, String name,String folderId, Boolean deleted, String sort, String sortDirection, int page, int size) {
+        if(sort.isEmpty() || (!sort.equals("name")  && !sort.equals("size") && !sort.equals("type")))
+            sort="name";
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+        return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndName(ownerId, deleted, folderId, name, pageable).getContent();
+    }
+    // search by type
+    public List<UserFile> searchFilesByType(String ownerId, String type,String folderId, Boolean deleted, String sort, String sortDirection, int page, int size) {
+        if(sort.isEmpty() || (!sort.equals("name")  && !sort.equals("size") && !sort.equals("type")))
+            sort="name";
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+        return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndType(ownerId, deleted, folderId, type, pageable).getContent();
+    }
+    // search by name of type
+    public List<UserFile> searchFilesByNameOrType(String ownerId, String keyword,String folderId, Boolean deleted, String sort, String sortDirection, int page, int size) {
+        if(sort.isEmpty() || (!sort.equals("name")  && !sort.equals("size") && !sort.equals("type")))
+            sort="name";
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+        return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndNameOrType(ownerId, deleted, folderId, keyword, pageable).getContent();
+    }
+
 
     public List<UserFile> getFilesByFolderId(String folderId) {
-        return userFileRepository.findAllByFolderIdAndDeleted(folderId, false, limit);
+        Page<UserFile> files=userFileRepository.findAllByFolderIdAndDeleted(folderId, false, limit);
+        return files.getContent();
     }
 
     public List<UserFile> getDeletedFiles(String ownerId) {
-        return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, limit);
+        return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, limit).getContent();
     }
 
     public UserFile getFileById(String fileId, String nationalId) {
@@ -67,14 +92,15 @@ public class UserFileService {
                                    String ownerName){
 
         String originalName = uploadedFile.getOriginalFilename();
+        String type = originalName.substring(originalName.lastIndexOf(".")+1);
+        String name = originalName.substring(0, originalName.lastIndexOf("."));
         String uniqueName = UUID.randomUUID().toString();
 
-        String type = originalName.substring(originalName.lastIndexOf(".")+1);
         String absolutePath = folderPath + File.separator + uniqueName + "." + type;
 
         UserFile file = UserFile.builder()
                 .id(uniqueName)
-                .name(originalName)
+                .name(name)
                 .type(type)
                 .size(uploadedFile.getSize())
                 .folderId(folderId)

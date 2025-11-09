@@ -292,7 +292,10 @@ export class DashboardComponent implements OnInit {
     this.loadingDeleted.set(true);
     this.deletedError.set(null);
 
-    const token = localStorage.getItem('jwt_token');
+    let token: string | null = null;
+    try {
+      token = localStorage.getItem('jwt_token');
+    } catch {}
     const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
     const ownerId = payload?.nationalId || payload?.sub || 'unknown';
 

@@ -1,9 +1,71 @@
-.site-navbar{position:sticky;top:0;z-index:1000;background:#ffffff;border-bottom:1px solid #e5e7eb}
-.nav-inner{max-width:1024px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
-.brand{display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none}
-.brand-logo{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--pill-accent, #0ea5e9);color:#fff;font-size:16px}
-.brand-name{font-weight:600}
-.nav-actions{display:flex;align-items:center;gap:12px}
-.nav-link{color:#111;text-decoration:none;padding:6px 8px;border-radius:6px}
-.nav-link:hover{background:#f3f4f6}
-.nav-button{background:var(--pill-accent, #0ea5e9);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer}
+.site-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgb(6, 0, 109);
+    border-bottom: 1px solid var(--surface-muted)
+}
+
+.nav-inner {
+    max-width: 1024px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+    text-decoration: none
+}
+
+.brand-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--pill-accent, #0ea5e9);
+    color: #fff;
+    font-size: 16px
+}
+
+.brand-name {
+    font-weight: 600;
+    color: white;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px
+}
+
+.nav-link {
+    color: #fcfcfc;
+    font-size: large;
+    text-decoration: none;
+    padding: 6px 8px;
+    border-radius: 6px
+}
+
+.nav-link:hover {
+    background: var(--surface-muted)
+}
+
+.nav-button {
+    background: var(--pill-accent, #0ea5e9);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer
+}
+.hello-message{
+    color: white;
+}

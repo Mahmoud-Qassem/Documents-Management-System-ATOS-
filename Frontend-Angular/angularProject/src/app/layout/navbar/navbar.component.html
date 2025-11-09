@@ -2,9 +2,9 @@
   <div class="nav-inner">
     <a class="brand" routerLink="/home" aria-label="Home">
       <span class="brand-logo" aria-hidden="true">📁</span>
-      <span class="brand-name">DocDrive</span>
+      <span class="brand-name">DMS</span>
     </a>
-    <p class="hello-message" *ngIf="userName() && isLoggedIn()">{{ "Hello, " + userName() + "!" }}</p>
+    <p class="hello-message" *ngIf="userName() && isLoggedIn()" style="color: white;">{{ "Hello, " + userName() + "!" }}</p>
 
     <div class="nav-actions">
       <a class="nav-link" routerLink="/home">Home</a>

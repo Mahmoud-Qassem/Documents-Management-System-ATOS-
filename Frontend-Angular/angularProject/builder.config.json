@@ -1,0 +1,6 @@
+{
+  "command": "ng serve",
+  "serverUrl": "http://localhost:4200",
+  "authenticateProxy": false,
+  "commitMode": "commits"
+}
