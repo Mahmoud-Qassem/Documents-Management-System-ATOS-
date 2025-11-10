@@ -51,16 +51,19 @@ public class UserFileService {
                 log.info("search by type {}", type);
                 return userFileRepository.findByDeletedAndOwnerIdAndType(deleted, ownerId, type, pageable);
             }
-        }
-        if (name != null && !name.isEmpty()) {
-            log.info("search by name {}", name);
-            return userFileRepository.findByDeletedAndOwnerIdAndFolderIdAndName(deleted, ownerId, folderId, name, pageable);
-        } else if (type != null && !type.isEmpty()) {
-            log.info("search by type {}", type);
-            return userFileRepository.findByDeletedAndOwnerIdAndFolderIdAndType(deleted, ownerId, folderId, type, pageable);
-        } else {
             return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, deleted, pageable);
         }
+        else{
+            if (name != null && !name.isEmpty()) {
+                log.info("search by name {}", name);
+                return userFileRepository.findByDeletedAndOwnerIdAndFolderIdAndName(deleted, ownerId, folderId, name, pageable);
+            } else if (type != null && !type.isEmpty()) {
+                log.info("search by type {}", type);
+                return userFileRepository.findByDeletedAndOwnerIdAndFolderIdAndType(deleted, ownerId, folderId, type, pageable);
+            }
+        }
+        return userFileRepository.findAllByOwnerIdAndDeletedAndFolderId(ownerId, deleted, folderId, pageable);
+
     }
 
     private Pageable getPageable(int page, int size, String sort, String sortDirection) {
@@ -172,6 +175,6 @@ public class UserFileService {
 
 
     public List<UserFile> getALLFilesByFolderId(String folderId) {
-        return userFileRepository.findAllByFolderIdAndDeleted(folderId, false);
+        return userFileRepository.findAllByFolderId(folderId);
     }
 }

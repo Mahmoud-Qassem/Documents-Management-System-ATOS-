@@ -385,6 +385,63 @@ export class DashboardComponent implements OnInit {
 
     this.docsApi.searchDocuments(params).subscribe({
       next: (page) => {
+        // If backend returned results, but user requested type-based search, ensure type filtering is applied client-side
+        if (page && (page.content?.length || 0) > 0) {
+          if (bq.keyword && bq.searchBy === 'type') {
+            const key = bq.keyword.toLowerCase();
+            const filtered = (page.content || []).filter(it => (it.type || '').toLowerCase().includes(key));
+            const synthetic = {
+              content: filtered,
+              totalPages: 1,
+              totalElements: filtered.length,
+              size: filtered.length,
+              number: 0
+            } as PageResponse<DocumentItem>;
+            this.binDocsPage.set(synthetic);
+            this.deletedDocs.set(filtered);
+            this.loadingDeleted.set(false);
+            return;
+          }
+
+          // Otherwise use server page
+          this.binDocsPage.set(page);
+          this.deletedDocs.set(page.content || []);
+          this.loadingDeleted.set(false);
+          return;
+        }
+
+        // Backend returned empty result set: attempt broader fetch & client-side filtering (fallback)
+        if (bq.keyword) {
+          this.docsApi.getDeletedDocuments(ownerId, { page: 0, size: 1000, sort: bq.sort, dir: bq.dir }).subscribe({
+            next: (fullPage) => {
+              const all = fullPage?.content || [];
+              const key = bq.keyword?.toLowerCase();
+              const filtered = all.filter((it) => {
+                if (bq.searchBy === 'name') return (it.name || it.title || it.fileName || '').toLowerCase().includes(key);
+                if (bq.searchBy === 'type') return (it.type || '').toLowerCase().includes(key);
+                return false;
+              });
+              const synthetic = {
+                content: filtered,
+                totalPages: 1,
+                totalElements: filtered.length,
+                size: filtered.length,
+                number: 0
+              } as PageResponse<DocumentItem>;
+
+              this.binDocsPage.set(synthetic);
+              this.deletedDocs.set(filtered);
+              this.loadingDeleted.set(false);
+            },
+            error: () => {
+              this.deletedError.set('Could not load deleted files');
+              this.loadingDeleted.set(false);
+            }
+          });
+          return;
+        }
+
+        // no keyword and nothing returned
         this.binDocsPage.set(page);
         this.deletedDocs.set(page?.content || []);
         this.loadingDeleted.set(false);

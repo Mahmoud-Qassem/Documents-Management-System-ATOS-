@@ -18,6 +18,7 @@ public interface UserFileRepository extends MongoRepository<UserFile, String> {
 
     Page<UserFile> findAllByFolderIdAndDeleted(String folderId, boolean deleted, Pageable pageable);
 
+    List<UserFile> findAllByFolderId(String folderId);
     Page<UserFile> findAllByOwnerIdAndDeleted(String ownerId, boolean deleted, Pageable pageable);
     @Query("{deleted: ?0, ownerId: ?1, folderId: ?2, name:{ $regex: ?3, $options: 'i' }}")
     Page<UserFile> findByDeletedAndOwnerIdAndFolderIdAndName(
@@ -31,4 +32,6 @@ public interface UserFileRepository extends MongoRepository<UserFile, String> {
     Page<UserFile> findByDeletedAndOwnerIdAndName(boolean deleted, String ownerId, String name, Pageable pageable);
     @Query("{ deleted: ?0, ownerId: ?1, type:{ $regex: ?2, $options: 'i' } }")
     Page<UserFile> findByDeletedAndOwnerIdAndType(boolean deleted, String ownerId, String type, Pageable pageable);
+
+    Page<UserFile> findAllByOwnerIdAndDeletedAndFolderId(String ownerId, boolean deleted, String folderId, Pageable pageable);
 }
