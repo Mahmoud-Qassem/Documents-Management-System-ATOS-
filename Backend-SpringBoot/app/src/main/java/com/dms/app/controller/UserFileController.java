@@ -8,6 +8,7 @@ import com.dms.app.service.FolderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.List;
 
 
 @Slf4j
@@ -33,76 +33,50 @@ public class UserFileController {
     }
 
     // sort by name, type, size
-    // api/files/searchByName
-    @GetMapping("/searchByName")
-    public ResponseEntity<List<UserFile>> searchFilesByName(@RequestParam("name") String name,
-                                                      @RequestParam(value = "page", defaultValue = "0") int page,
-                                                      @RequestParam(value = "size", defaultValue = "20") int size,
-                                                      @RequestParam(value = "folderId") String folderId,
-                                                      @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
-                                                      @RequestParam(value = "sort", defaultValue = "name") String sort,
-                                                      @RequestParam(value = "dir" , defaultValue = "asc") String dir,
-                                                      Authentication authentication) {
+    @GetMapping("/search")
+    public ResponseEntity<Page<UserFile>> searchFiles(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(value = "folderId", required = false) String folderId,
+            @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sort", defaultValue = "name") String sort,
+            @RequestParam(value = "dir", defaultValue = "asc") String dir,
+            Authentication authentication){
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String nationalId = userDetails.getNationalId();
-
-        List<UserFile> files = userFileService.searchFilesByName(nationalId, name, folderId, deleted, sort, dir, page, size);
-        return ResponseEntity.ok(files);
-    }
-
-    // api/files/searchByType
-    @GetMapping("/searchByType")
-    public ResponseEntity<List<UserFile>> searchFilesByType(@RequestParam("type") String type,
-                                                            @RequestParam(value = "page", defaultValue = "0") int page,
-                                                            @RequestParam(value = "size", defaultValue = "20") int size,
-                                                            @RequestParam(value = "folderId") String folderId,
-                                                            @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
-                                                            @RequestParam(value = "sort", defaultValue = "name") String sort,
-                                                            @RequestParam(value = "dir" , defaultValue = "asc") String dir,
-                                                            Authentication authentication) {
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String nationalId = userDetails.getNationalId();
-
-        List<UserFile> files = userFileService.searchFilesByType(nationalId, type, folderId, deleted, sort, dir, page, size);
-        return ResponseEntity.ok(files);
-    }
-
-    // api/files/searchByNameOrType
-    @GetMapping("/searchByNameOrType")
-    public ResponseEntity<List<UserFile>> searchFilesByNameOrType(@RequestParam("keyword") String keyword,
-                                                                  @RequestParam(value = "page", defaultValue = "0") int page,
-                                                                  @RequestParam(value = "size", defaultValue = "20") int size,
-                                                                  @RequestParam(value = "folderId") String folderId,
-                                                                  @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
-                                                                  @RequestParam(value = "sort", defaultValue = "name") String sort,
-                                                                  @RequestParam(value = "dir" , defaultValue = "asc") String dir,
-                                                                  Authentication authentication) {
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String nationalId = userDetails.getNationalId();
-
-        List<UserFile> files = userFileService.searchFilesByNameOrType(nationalId, keyword, folderId, deleted, sort, dir , page, size);
+        String nationalId = getNationalId(authentication);
+        Page<UserFile> files = userFileService.searchFiles(nationalId, folderId, deleted, name, type, keyword, sort, dir, page, size);
         return ResponseEntity.ok(files);
     }
 
     @GetMapping("/folder/{folderId}")
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'READ')")
-    public ResponseEntity<List<UserFile>> getUserFilesByFolderId(@PathVariable String folderId) {
-        List<UserFile> files = userFileService.getFilesByFolderId(folderId);
+    public ResponseEntity<Page<UserFile>> getUserFilesByFolderId(@PathVariable String folderId,
+                                                                 @RequestParam(value = "page", defaultValue = "0") int page,
+                                                                 @RequestParam(value = "size", defaultValue = "10") int size,
+                                                                 @RequestParam(value = "sort", defaultValue = "name") String sort,
+                                                                 @RequestParam(value = "dir", defaultValue = "asc") String dir) {
+        Page<UserFile> files = userFileService.getFilesByFolderId(folderId, page, size, sort, dir);
         return ResponseEntity.ok(files);
     }
 
     @GetMapping("/deleted/{ownerId}")
-    public ResponseEntity<List<UserFile>> getDeletedUserFiles(@PathVariable String ownerId) {
-        List<UserFile> deletedUserFiles = userFileService.getDeletedFiles(ownerId);
+    public ResponseEntity<Page<UserFile>> getDeletedUserFiles(@PathVariable String ownerId,
+                                                              @RequestParam(value = "page", defaultValue = "0") int page,
+                                                              @RequestParam(value = "size", defaultValue = "10") int size,
+                                                              @RequestParam(value = "sort", defaultValue = "name") String sort,
+                                                              @RequestParam(value = "dir", defaultValue = "asc") String dir
+                                                              ) {
+        Page<UserFile> deletedUserFiles = userFileService.getDeletedFiles(ownerId, page, size, sort, dir);
         return ResponseEntity.ok(deletedUserFiles);
     }
 
     @GetMapping("/{fileId}")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'READ')")
     public ResponseEntity<UserFile> getFileById(@PathVariable String fileId, Authentication authentication) {
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String nationalId = userDetails.getNationalId();
+        String nationalId = getNationalId(authentication);
         UserFile file = userFileService.getFileById(fileId, nationalId);
         return ResponseEntity.ok(file);
     }
@@ -129,13 +103,13 @@ public class UserFileController {
     @GetMapping("/download/{fileId}")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'READ')")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileId, Authentication authentication) {
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String nationalId = userDetails.getNationalId();
+        String nationalId = getNationalId(authentication);
         Resource file = userFileService.downloadFile(fileId, nationalId);
-        return ResponseEntity.ok()
+        ResponseEntity<Resource> response = ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
                 .body(file);
+        return response;
     }
 
     @PutMapping("/{fileId}/newName")
@@ -168,4 +142,9 @@ public class UserFileController {
         UserFile restoredFile = userFileService.restoreFile(fileId);
         return ResponseEntity.ok(restoredFile);
     }
+
+    private String getNationalId(Authentication authentication) {
+        return ((CustomUserDetails) authentication.getPrincipal()).getNationalId();
+    }
+
 }

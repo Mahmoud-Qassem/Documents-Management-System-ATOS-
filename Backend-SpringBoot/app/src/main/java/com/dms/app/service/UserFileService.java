@@ -45,36 +45,38 @@ public class UserFileService {
     public void init() {
         limit = PageRequest.of(0, pageSize);
     }
-    // search by name
-    public List<UserFile> searchFilesByName(String ownerId, String name,String folderId, Boolean deleted, String sort, String sortDirection, int page, int size) {
-        if(sort.isEmpty() || (!sort.equals("name")  && !sort.equals("size") && !sort.equals("type")))
-            sort="name";
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-        return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndName(ownerId, deleted, folderId, name, pageable).getContent();
+
+    public Page<UserFile> searchFiles(String ownerId, String folderId, boolean deleted, String name, String type, String keyword, String sort, String sortDirection, int page, int size) {
+        Pageable pageable = getPageable(page, size, sort, sortDirection);
+        if (keyword != null && !keyword.isEmpty()) {
+            return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndNameOrType(ownerId, deleted, folderId, keyword, pageable);
+        } else if (name != null && !name.isEmpty()) {
+            return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndName(ownerId, deleted, folderId, name, pageable);
+        } else if (type != null && !type.isEmpty()) {
+            return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndType(ownerId, deleted, folderId, type, pageable);
+        } else {
+            return userFileRepository.findAllByOwnerIdAndDeletedAndFolderId(ownerId, deleted, folderId, pageable);
+        }
     }
-    // search by type
-    public List<UserFile> searchFilesByType(String ownerId, String type,String folderId, Boolean deleted, String sort, String sortDirection, int page, int size) {
-        if(sort.isEmpty() || (!sort.equals("name")  && !sort.equals("size") && !sort.equals("type")))
+
+    private Pageable getPageable(int page, int size, String sort, String sortDirection) {
+        if(sort.isEmpty() || (!sort.equalsIgnoreCase("name")  && !sort.equalsIgnoreCase("size") && !sort.equalsIgnoreCase("type")))
             sort="name";
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-        return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndType(ownerId, deleted, folderId, type, pageable).getContent();
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
+        return pageable;
     }
-    // search by name of type
-    public List<UserFile> searchFilesByNameOrType(String ownerId, String keyword,String folderId, Boolean deleted, String sort, String sortDirection, int page, int size) {
-        if(sort.isEmpty() || (!sort.equals("name")  && !sort.equals("size") && !sort.equals("type")))
-            sort="name";
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-        return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndNameOrType(ownerId, deleted, folderId, keyword, pageable).getContent();
+
+    public Page<UserFile> getFilesByFolderId(String folderId, int page, int size, String sort, String sortDirection) {
+        Pageable pageable = getPageable(page, size, sort, sortDirection);
+        return userFileRepository.findAllByFolderIdAndDeleted(folderId, false, pageable);
     }
 
 
-    public List<UserFile> getFilesByFolderId(String folderId) {
-        Page<UserFile> files=userFileRepository.findAllByFolderIdAndDeleted(folderId, false, limit);
-        return files.getContent();
-    }
 
-    public List<UserFile> getDeletedFiles(String ownerId) {
-        return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, limit).getContent();
+    public Page<UserFile> getDeletedFiles(String ownerId, int page, int size, String sort, String sortDirection)  {
+        Pageable pageable = getPageable(page, size, sort, sortDirection);
+        return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, pageable);
     }
 
     public UserFile getFileById(String fileId, String nationalId) {
@@ -163,5 +165,10 @@ public class UserFileService {
         userFileRepository.delete(file);
 
         return file;
+    }
+
+
+    public List<UserFile> getALLFilesByFolderId(String folderId) {
+        return userFileRepository.findAllByFolderIdAndDeleted(folderId, false);
     }
 }

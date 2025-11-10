@@ -92,7 +92,7 @@ public class FolderService {
                 .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
 
         // delete all files
-        List<UserFile> files = userFileService.getFilesByFolderId(folderId);
+        List<UserFile> files = userFileService.getALLFilesByFolderId(folderId);
         for (UserFile file : files) {
             try {
                 userFileService.deleteFileHard(file.getId());
