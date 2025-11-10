@@ -508,7 +508,7 @@ export class DashboardComponent implements OnInit {
 
   // Document actions
   docDisplayName(doc: DocumentItem) {
-    return doc.name || doc.title || doc.fileName || `Document ${doc.id}`;
+    return (doc.name || doc.title || doc.fileName || `Document ${doc.id}`)  +"."+ doc.type;
   }
 
   showDocDetails(doc: DocumentItem) {
