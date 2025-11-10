@@ -1,10 +1,10 @@
 .auth-wrapper{max-width:560px;margin:24px auto;padding:0 16px}
-.auth-form{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px}
+.auth-form{background:#fff;border:1px solid var(--surface-muted);border-radius:8px;padding:16px}
 .auth-title{margin:0 0 12px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .label{font-size:.875rem;color:#555}
-.input{border:1px solid #e5e7eb;border-radius:6px;padding:8px}
+.input{border:1px solid var(--surface-muted);border-radius:6px;padding:8px}
 .actions{display:flex;align-items:center;gap:12px;margin-top:10px}
 .btn{background:var(--pill-accent, #0ea5e9);color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer}
 .link{color:#111;text-decoration:none}

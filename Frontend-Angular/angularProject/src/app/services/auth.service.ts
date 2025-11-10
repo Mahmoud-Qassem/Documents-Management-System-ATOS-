@@ -43,7 +43,11 @@ export class AuthService {
           this.setRefreshToken(response.refreshToken);
         }
         this.authState.set(this.isLoggedIn());
-        localStorage.setItem('username', payload.email);
+        try {
+          localStorage.setItem('username', payload.email);
+        } catch {
+          // ignore when not available (SSR)
+        }
       }),
       catchError(this.handleError)
     );
@@ -52,7 +56,11 @@ export class AuthService {
     return this.base;
   }
   getUserName() {
-    return localStorage.getItem('username');
+    try {
+      return localStorage.getItem('username');
+    } catch {
+      return null;
+    }
   }
 
   /** ------------------ REGISTER ------------------ **/

@@ -50,6 +50,7 @@ export class LoginComponent implements OnInit {
     this.auth.login(this.form.value).subscribe({
       next: (res) => {
         this.loading = false;
+        console.log('Login successful', res);
         this.router.navigateByUrl('/home');
       },
       error: (err: any) => {

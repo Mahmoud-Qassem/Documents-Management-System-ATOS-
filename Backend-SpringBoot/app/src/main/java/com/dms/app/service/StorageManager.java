@@ -18,7 +18,7 @@ public class StorageManager {
     }
 
     public void deleteFolder(String absolutePath) throws IOException {
-        Files.delete(Paths.get(absolutePath));
+        Files.deleteIfExists(Paths.get(absolutePath));
     }
 
 

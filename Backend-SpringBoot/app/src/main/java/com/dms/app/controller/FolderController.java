@@ -28,12 +28,10 @@ import java.util.Map;
 @RequestMapping("/api/folders")
 public class FolderController {
     private final FolderService folderService;
-    private final PersonService personService;
 
     @Autowired
-    public FolderController(FolderService folderService, PersonService personService) {
+    public FolderController(FolderService folderService) {
         this.folderService = folderService;
-        this.personService = personService;
     }
     @PostMapping
     public ResponseEntity<Folder> createFolder(@RequestBody Folder folder, Authentication authentication){
@@ -44,7 +42,7 @@ public class FolderController {
         Folder createdFolder = folderService.createFolder(folder, nationalId, ownerName);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdFolder);
     }
-    //
+
     @GetMapping("/owner/{ownerId}")
     @PreAuthorize("hasPermission(#ownerId, 'OWNER', 'READ')")
     public ResponseEntity<List<Folder>> getFoldersByOwnerId(@PathVariable String ownerId, HttpServletRequest request){
