@@ -108,58 +108,124 @@
     </div>
 
     <!-- Recycle Bin view -->
-    <div class="drive-grid" *ngIf="inRecycleBin()">
-      
-
-      <!-- Deleted Folders -->
-      <div class="drive-item" *ngFor="let folder of deletedFolders() || []">
-        <div class="item-main" (click)="$event.stopPropagation()">
-          <div class="item-icon" aria-hidden="true">
-            <svg viewBox="0 0 64 64" class="icon-svg">
-              <path d="M20 18h24l2 38H18l2-38zm8-6h8l2 6H26l2-6z" fill="#ccc" />
-              <path d="M22 22h20v30H22z" fill="#999" />
-            </svg>
+    <div *ngIf="inRecycleBin()">
+      <div class="section-header">
+        <h3 class="section-title">Deleted Folders</h3>
+      </div>
+      <div class="drive-grid">
+        <div class="drive-item" *ngFor="let folder of deletedFolders() || []">
+          <div class="item-main" (click)="$event.stopPropagation()">
+            <div class="item-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" class="icon-svg">
+                <path d="M20 18h24l2 38H18l2-38zm8-6h8l2 6H26l2-6z" fill="#ccc" />
+                <path d="M22 22h20v30H22z" fill="#999" />
+              </svg>
+            </div>
+            <div class="item-meta">
+              <div class="item-name">{{ folder.name }}</div>
+              <div class="item-sub">{{ folder.size }} MB</div>
+            </div>
           </div>
-          <div class="item-meta">
-            <div class="item-name">{{ folder.name }}</div>
-            <div class="item-sub">{{ folder.size }} MB</div>
+          <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)"
+            aria-label="Open menu">⋯</button>
+          <div class="menu-panel" *ngIf="openRecycleBinMenuId() === folder.id" (click)="$event.stopPropagation()">
+            <button class="menu-item" (click)="$event.stopPropagation(); restoreFolder(folder)">Restore</button>
+            <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteFolder(folder)">Delete
+              permanently</button>
           </div>
         </div>
-        <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)"
-          aria-label="Open menu">⋯</button>
-        <div class="menu-panel" *ngIf="openRecycleBinMenuId() === folder.id" (click)="$event.stopPropagation()">
-          <button class="menu-item" (click)="$event.stopPropagation(); restoreFolder(folder)">Restore</button>
-          <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteFolder(folder)">Delete
-            permanently</button>
-        </div>
+        <div class="drive-item empty" *ngIf="(deletedFolders() || []).length === 0">No deleted folders</div>
       </div>
 
-      <!-- Deleted Documents -->
-      <div class="drive-item" *ngFor="let doc of deletedDocs() || []">
-        <div class="item-main" (click)="$event.stopPropagation()">
-          <div class="item-icon" aria-hidden="true">
-            <svg viewBox="0 0 64 64" class="icon-svg">
-              <path d="M14 8h28l8 8v40H14z" fill="#60a5fa" />
-              <path d="M42 8v12h12" fill="#93c5fd" />
-            </svg>
-          </div>
-          <div class="item-meta">
-            <div class="item-name" [title]="docDisplayName(doc)">{{ docDisplayName(doc) }}</div>
-            <div class="item-sub" [title]="doc.type">{{ doc.type || 'document' }}</div>
-          </div>
-        </div>
-        <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(doc.id)"
-          aria-label="Open menu">⋯</button>
-        <div class="menu-panel" *ngIf="openRecycleBinMenuId() === doc.id" (click)="$event.stopPropagation()">
-          <button class="menu-item" (click)="$event.stopPropagation(); restoreDocument(doc)">Restore</button>
-          <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteDocument(doc)">Delete
-            permanently</button>
-        </div>
+      <div class="section-header">
+        <h3 class="section-title">Deleted Files</h3>
       </div>
 
-      <div class="drive-item empty" *ngIf="(deletedFolders() || []).length === 0 && (deletedDocs() || []).length === 0">
-        Recycle Bin is empty
+      <section class="site-search">
+        <div class="search-container">
+          <form class="search-form" (submit)="$event.preventDefault(); onBinSearch()">
+            <input class="search-input" type="search" aria-label="Search deleted files" placeholder="Search deleted files"
+                   [ngModel]="binQuery().keyword" (ngModelChange)="onBinKeywordChange($event)" name="binKeyword" />
+            <button class="search-button" type="submit">Search</button>
+            <button *ngIf="binQuery().keyword" type="button" class="clear-button" (click)="clearBinSearch()">✕</button>
+          </form>
+        </div>
+        <div class="search-controls">
+          <div class="control-group">
+            <label class="control-label" for="binSearchBy">Search by</label>
+            <select id="binSearchBy" class="control-select" [ngModel]="binQuery().searchBy" name="binSearchBy"
+                    (ngModelChange)="onBinSearchByChange($event)">
+              <option value="name">Name</option>
+              <option value="type">Type</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="binSortBy">Sort by</label>
+            <select id="binSortBy" class="control-select" [ngModel]="binQuery().sort" name="binSortBy"
+                    (ngModelChange)="onBinSortChange($event)">
+              <option value="name">Name</option>
+              <option value="type">Type</option>
+              <option value="size">Size</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="binSortDir">Direction</label>
+            <select id="binSortDir" class="control-select" [ngModel]="binQuery().dir" name="binSortDir"
+                    (ngModelChange)="onBinDirChange($event)">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="binPageSize">Page size</label>
+            <select id="binPageSize" class="control-select" [ngModel]="binQuery().size" name="binPageSize"
+                    (ngModelChange)="onBinSizeChange($event)">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="30">30</option>
+              <option [ngValue]="40">40</option>
+              <option [ngValue]="50">50</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <div class="drive-grid">
+        <div class="drive-item" *ngFor="let doc of deletedDocs() || []">
+          <div class="item-main" (click)="$event.stopPropagation()">
+            <div class="item-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" class="icon-svg">
+                <path d="M14 8h28l8 8v40H14z" fill="#60a5fa" />
+                <path d="M42 8v12h12" fill="#93c5fd" />
+              </svg>
+            </div>
+            <div class="item-meta">
+              <div class="item-name" [title]="docDisplayName(doc)">{{ docDisplayName(doc) }}</div>
+              <div class="item-sub" [title]="doc.type">{{ doc.type || 'document' }}</div>
+            </div>
+          </div>
+          <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(doc.id)"
+            aria-label="Open menu">⋯</button>
+          <div class="menu-panel" *ngIf="openRecycleBinMenuId() === doc.id" (click)="$event.stopPropagation()">
+            <button class="menu-item" (click)="$event.stopPropagation(); restoreDocument(doc)">Restore</button>
+            <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteDocument(doc)">Delete
+              permanently</button>
+          </div>
+        </div>
+        <div class="drive-item empty" *ngIf="(deletedDocs() || []).length === 0">No deleted files found.</div>
       </div>
+
+      <div class="pagination" *ngIf="(binDocsPage()?.totalPages || 0) > 1">
+        <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) === 0"
+                (click)="goToBinPage((binDocsPage()?.number || 0) - 1)">Prev</button>
+        <button class="page-btn" *ngFor="let p of listPages(binDocsPage()?.totalPages || 0); let i = index"
+                [class.active]="i === (binDocsPage()?.number || 0)"
+                (click)="goToBinPage(i)">{{ i + 1 }}</button>
+        <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) >= ((binDocsPage()?.totalPages || 1) - 1)"
+                (click)="goToBinPage((binDocsPage()?.number || 0) + 1)">Next</button>
+      </div>
+
+
     </div>
 
 
@@ -172,10 +238,50 @@
 
       <section class="site-search">
       <div class="search-container">
-        <form class="search-form" (submit)="$event.preventDefault()">
-          <input class="search-input" type="search" aria-label="Search" placeholder="Search documents" />
-          <button class="search-button" type="button">Search</button>
+        <form class="search-form" (submit)="$event.preventDefault(); onDocsSearch()">
+          <input class="search-input" type="search" aria-label="Search" placeholder="Search documents"
+                 [ngModel]="docsQuery().keyword" (ngModelChange)="onDocsKeywordChange($event)" name="docsKeyword" />
+          <button class="search-button" type="submit">Search</button>
+          <button *ngIf="docsQuery().keyword" type="button" class="clear-button" (click)="clearDocsSearch()">✕</button>
         </form>
+      </div>
+      <div class="search-controls">
+        <div class="control-group">
+          <label class="control-label" for="docsSearchBy">Search by</label>
+          <select id="docsSearchBy" class="control-select" [ngModel]="docsQuery().searchBy" name="docsSearchBy"
+                  (ngModelChange)="onDocsSearchByChange($event)">
+            <option value="name">Name</option>
+            <option value="type">Type</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="docsSortBy">Sort by</label>
+          <select id="docsSortBy" class="control-select" [ngModel]="docsQuery().sort" name="docsSortBy"
+                  (ngModelChange)="onDocsSortChange($event)">
+            <option value="name">Name</option>
+            <option value="type">Type</option>
+            <option value="size">Size</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="docsSortDir">Direction</label>
+          <select id="docsSortDir" class="control-select" [ngModel]="docsQuery().dir" name="docsSortDir"
+                  (ngModelChange)="onDocsDirChange($event)">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="docsPageSize">Page size</label>
+          <select id="docsPageSize" class="control-select" [ngModel]="docsQuery().size" name="docsPageSize"
+                  (ngModelChange)="onDocsSizeChange($event)">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="30">30</option>
+            <option [ngValue]="40">40</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </div>
       </div>
     </section>
 
@@ -218,6 +324,16 @@
           <button class="retry-button" *ngIf="foldersError() || docsError()" (click)="loadActiveArea()">Retry</button>
         </div>
 
+      </div>
+
+      <div class="pagination" *ngIf="(docsPage()?.totalPages || 0) > 1">
+        <button class="page-btn" [disabled]="(docsPage()?.number || 0) === 0"
+                (click)="goToDocsPage((docsPage()?.number || 0) - 1)">Prev</button>
+        <button class="page-btn" *ngFor="let p of listPages(docsPage()?.totalPages || 0); let i = index"
+                [class.active]="i === (docsPage()?.number || 0)"
+                (click)="goToDocsPage(i)">{{ i + 1 }}</button>
+        <button class="page-btn" [disabled]="(docsPage()?.number || 0) >= ((docsPage()?.totalPages || 1) - 1)"
+                (click)="goToDocsPage((docsPage()?.number || 0) + 1)">Next</button>
       </div>
     </section>
   </section>

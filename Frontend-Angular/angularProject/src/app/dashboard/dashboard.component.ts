@@ -1,17 +1,17 @@
 import { Component, HostListener, OnInit, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FoldersService, Folder } from '../services/folders.service';
-import { DocumentsService, DocumentItem } from '../services/documents.service';
+import { DocumentsService, DocumentItem, PageResponse, SortDir, SortField } from '../services/documents.service';
 import { DocumentSizePipe } from '../pipes/file-size.pipe';
-import { error } from 'node:console';
 
 interface Crumb { id: string | null; name: string; }
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DocumentSizePipe],
+  imports: [CommonModule, FormsModule, DocumentSizePipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -26,6 +26,17 @@ export class DashboardComponent implements OnInit {
   loadingDocs = signal(false);
   docsError = signal<string | null>(null);
 
+  // Documents pagination/sort/search state
+  docsQuery = signal<{ keyword: string; searchBy: 'name'|'type'; sort: SortField; dir: SortDir; page: number; size: number }>({
+    keyword: '',
+    searchBy: 'name',
+    sort: 'name',
+    dir: 'asc',
+    page: 0,
+    size: 10
+  });
+  docsPage: WritableSignal<PageResponse<DocumentItem> | null> = signal(null);
+
   openMenuForId: WritableSignal<string | null> = signal(null);
   showDetailsFor: WritableSignal<Folder | null> = signal(null);
 
@@ -36,10 +47,21 @@ export class DashboardComponent implements OnInit {
   // Recycle Bin state
   inRecycleBin = signal(false);
   deletedFolders: WritableSignal<Folder[] | null> = signal(null);
-  deletedDocs: WritableSignal<DocumentItem[] | null> = signal(null); // NEW
+  deletedDocs: WritableSignal<DocumentItem[] | null> = signal(null);
   loadingDeleted = signal(false);
   deletedError = signal<string | null>(null);
   openRecycleBinMenuId = signal<string | null>(null);
+
+  // Recycle Bin files pagination/sort/search state
+  binQuery = signal<{ keyword: string; searchBy: 'name'|'type'; sort: SortField; dir: SortDir; page: number; size: number }>({
+    keyword: '',
+    searchBy: 'name',
+    sort: 'name',
+    dir: 'asc',
+    page: 0,
+    size: 10
+  });
+  binDocsPage: WritableSignal<PageResponse<DocumentItem> | null> = signal(null);
 
   constructor(
     private foldersApi: FoldersService,
@@ -118,6 +140,7 @@ export class DashboardComponent implements OnInit {
     if (current.id !== null) this.fetchDocuments(current.id);
     else {
       this.files.set([]);
+      this.docsPage.set({ content: [], totalPages: 0, totalElements: 0, size: this.docsQuery().size, number: 0 });
       this.loadingDocs.set(false);
       this.docsError.set(null);
     }
@@ -166,18 +189,67 @@ export class DashboardComponent implements OnInit {
   fetchDocuments(folderId: string) {
     this.loadingDocs.set(true);
     this.docsError.set(null);
-    this.docsApi.getDocuments(folderId).subscribe({
-      next: (items) => {
-        this.files.set(items || []);
+    const q = this.docsQuery();
+    const params: any = { folderId, deleted: false, page: q.page, size: q.size, sort: q.sort, dir: q.dir };
+    if (q.keyword) {
+      if (q.searchBy === 'name') params.name = q.keyword;
+      else if (q.searchBy === 'type') params.type = q.keyword;
+    }
+
+    this.docsApi.searchDocuments(params).subscribe({
+      next: (page) => {
+        this.docsPage.set(page);
+        this.files.set(page?.content || []);
         this.loadingDocs.set(false);
       },
       error: () => {
-        // check if the error message "message": "Access Denied" is returned
-
         this.docsError.set('Failed to load files');
         this.loadingDocs.set(false);
       }
     });
+  }
+
+  listPages(total: number): number[] {
+    const n = Math.max(0, total || 0);
+    return Array.from({ length: n }, (_, i) => i);
+  }
+
+  onDocsSearch() {
+    this.docsQuery.update((s) => ({ ...s, page: 0 }));
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  }
+
+  onDocsKeywordChange(value: string) {
+    this.docsQuery.update((s) => ({ ...s, keyword: value }));
+  }
+
+  onDocsSearchByChange(value: 'name'|'type') {
+    this.docsQuery.update((s) => ({ ...s, searchBy: value }));
+  }
+
+  clearDocsSearch() {
+    this.docsQuery.update((s) => ({ ...s, keyword: '', page: 0 }));
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  }
+
+  onDocsSortChange(field: SortField) {
+    this.docsQuery.update((s) => ({ ...s, sort: field, page: 0 }));
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  }
+
+  onDocsDirChange(dir: SortDir) {
+    this.docsQuery.update((s) => ({ ...s, dir, page: 0 }));
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  }
+
+  onDocsSizeChange(size: number) {
+    this.docsQuery.update((s) => ({ ...s, size, page: 0 }));
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  }
+
+  goToDocsPage(idx: number) {
+    this.docsQuery.update((s) => ({ ...s, page: idx }));
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
   }
 
   openFolder(folder: Folder) {
@@ -304,9 +376,17 @@ export class DashboardComponent implements OnInit {
       error: () => this.deletedError.set('Could not load deleted folders'),
     });
 
-    this.docsApi.getDeletedDocuments(ownerId).subscribe({
-      next: (docs) => {
-        this.deletedDocs.set(docs || []);
+    const bq = this.binQuery();
+    const params: any = { deleted: true, page: bq.page, size: bq.size, sort: bq.sort, dir: bq.dir };
+    if (bq.keyword) {
+      if (bq.searchBy === 'name') params.name = bq.keyword;
+      else if (bq.searchBy === 'type') params.type = bq.keyword;
+    }
+
+    this.docsApi.searchDocuments(params).subscribe({
+      next: (page) => {
+        this.binDocsPage.set(page);
+        this.deletedDocs.set(page?.content || []);
         this.loadingDeleted.set(false);
       },
       error: () => {
@@ -314,6 +394,44 @@ export class DashboardComponent implements OnInit {
         this.loadingDeleted.set(false);
       },
     });
+  }
+
+  onBinSearch() {
+    this.binQuery.update((s) => ({ ...s, page: 0 }));
+    this.loadDeletedItems();
+  }
+
+  onBinKeywordChange(value: string) {
+    this.binQuery.update((s) => ({ ...s, keyword: value }));
+  }
+
+  onBinSearchByChange(value: 'name'|'type') {
+    this.binQuery.update((s) => ({ ...s, searchBy: value }));
+  }
+
+  clearBinSearch() {
+    this.binQuery.update((s) => ({ ...s, keyword: '', page: 0 }));
+    this.loadDeletedItems();
+  }
+
+  onBinSortChange(field: SortField) {
+    this.binQuery.update((s) => ({ ...s, sort: field, page: 0 }));
+    this.loadDeletedItems();
+  }
+
+  onBinDirChange(dir: SortDir) {
+    this.binQuery.update((s) => ({ ...s, dir, page: 0 }));
+    this.loadDeletedItems();
+  }
+
+  onBinSizeChange(size: number) {
+    this.binQuery.update((s) => ({ ...s, size, page: 0 }));
+    this.loadDeletedItems();
+  }
+
+  goToBinPage(idx: number) {
+    this.binQuery.update((s) => ({ ...s, page: idx }));
+    this.loadDeletedItems();
   }
 
   restoreFolder(folder: Folder) {

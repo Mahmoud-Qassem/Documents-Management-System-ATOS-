@@ -37,17 +37,16 @@ public class UserFileController {
     public ResponseEntity<Page<UserFile>> searchFiles(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(value = "folderId", required = false) String folderId,
-            @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "sort", defaultValue = "name") String sort,
-            @RequestParam(value = "dir", defaultValue = "asc") String dir,
-            Authentication authentication){
+            @RequestParam(required = false) String folderId,
+            @RequestParam(defaultValue = "false") boolean deleted,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "asc") String dir,
+            Authentication authentication) {
 
         String nationalId = getNationalId(authentication);
-        Page<UserFile> files = userFileService.searchFiles(nationalId, folderId, deleted, name, type, keyword, sort, dir, page, size);
+        Page<UserFile> files = userFileService.searchFiles(nationalId, folderId, deleted, name, type, sort, dir, page, size);
         return ResponseEntity.ok(files);
     }
 
@@ -68,7 +67,7 @@ public class UserFileController {
                                                               @RequestParam(value = "size", defaultValue = "10") int size,
                                                               @RequestParam(value = "sort", defaultValue = "name") String sort,
                                                               @RequestParam(value = "dir", defaultValue = "asc") String dir
-                                                              ) {
+    ) {
         Page<UserFile> deletedUserFiles = userFileService.getDeletedFiles(ownerId, page, size, sort, dir);
         return ResponseEntity.ok(deletedUserFiles);
     }
@@ -83,7 +82,7 @@ public class UserFileController {
 
     @PostMapping(value = "/upload/{folderId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'WRITE')")
-    public ResponseEntity<UserFile> uploadFile(@RequestParam(value = "file", required = false) MultipartFile uploadedFile, @PathVariable String folderId, Authentication authentication){
+    public ResponseEntity<UserFile> uploadFile(@RequestParam(value = "file", required = false) MultipartFile uploadedFile, @PathVariable String folderId, Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String nationalId = userDetails.getNationalId();
         String ownerName = userDetails.getFullName();
@@ -115,7 +114,7 @@ public class UserFileController {
     @PutMapping("/{fileId}/newName")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'UPDATE')")
     public ResponseEntity<UserFile> rename(@PathVariable String fileId, @RequestParam("newName") String newName) {
-        if(newName.length()<3){
+        if (newName.length() < 3) {
             return ResponseEntity.badRequest().build();
         }
         UserFile updatedFile = userFileService.rename(fileId, newName);
@@ -124,14 +123,14 @@ public class UserFileController {
 
     @DeleteMapping("/{fileId}")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'DELETE')")
-    public ResponseEntity<UserFile> deleteUserFile(@PathVariable String fileId){
+    public ResponseEntity<UserFile> deleteUserFile(@PathVariable String fileId) {
         UserFile deletedFile = userFileService.deleteFile(fileId);
         return ResponseEntity.ok(deletedFile);
     }
 
     @DeleteMapping("/{fileId}/hard")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'DELETE')")
-    public ResponseEntity<UserFile> deleteFileHard(@PathVariable String fileId){
+    public ResponseEntity<UserFile> deleteFileHard(@PathVariable String fileId) {
         UserFile deletedFile = userFileService.deleteFileHard(fileId);
         return ResponseEntity.ok(deletedFile);
     }

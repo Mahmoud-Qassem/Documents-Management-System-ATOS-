@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -26,12 +27,10 @@ import java.util.UUID;
 @Service
 public class UserFileService {
 
-    @Value("${spring.data.mongodb.page-size}")
-    int pageSize = 10;
+
     @Value("${local.folder.path}")
     String basePath;
 
-    private  Pageable limit ;
     private final UserFileRepository userFileRepository;
     private final StorageManager storageManager;
 
@@ -41,27 +40,32 @@ public class UserFileService {
         this.storageManager = storageManager;
     }
 
-    @PostConstruct
-    public void init() {
-        limit = PageRequest.of(0, pageSize);
-    }
 
-    public Page<UserFile> searchFiles(String ownerId, String folderId, boolean deleted, String name, String type, String keyword, String sort, String sortDirection, int page, int size) {
+    public Page<UserFile> searchFiles(String ownerId, String folderId, boolean deleted, String name, String type, String sort, String sortDirection, int page, int size) {
         Pageable pageable = getPageable(page, size, sort, sortDirection);
-        if (keyword != null && !keyword.isEmpty()) {
-            return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndNameOrType(ownerId, deleted, folderId, keyword, pageable);
-        } else if (name != null && !name.isEmpty()) {
-            return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndName(ownerId, deleted, folderId, name, pageable);
+        if(deleted){
+            if (name != null && !name.isEmpty()) {
+                log.info("search by name {}", name);
+                return userFileRepository.findByDeletedAndOwnerIdAndName(deleted, ownerId, name, pageable);
+            } else if (type != null && !type.isEmpty()) {
+                log.info("search by type {}", type);
+                return userFileRepository.findByDeletedAndOwnerIdAndType(deleted, ownerId, type, pageable);
+            }
+        }
+        if (name != null && !name.isEmpty()) {
+            log.info("search by name {}", name);
+            return userFileRepository.findByDeletedAndOwnerIdAndFolderIdAndName(deleted, ownerId, folderId, name, pageable);
         } else if (type != null && !type.isEmpty()) {
-            return userFileRepository.searchByOwnerIdAndDeletedAndFolderIdAndType(ownerId, deleted, folderId, type, pageable);
+            log.info("search by type {}", type);
+            return userFileRepository.findByDeletedAndOwnerIdAndFolderIdAndType(deleted, ownerId, folderId, type, pageable);
         } else {
-            return userFileRepository.findAllByOwnerIdAndDeletedAndFolderId(ownerId, deleted, folderId, pageable);
+            return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, deleted, pageable);
         }
     }
 
     private Pageable getPageable(int page, int size, String sort, String sortDirection) {
-        if(sort.isEmpty() || (!sort.equalsIgnoreCase("name")  && !sort.equalsIgnoreCase("size") && !sort.equalsIgnoreCase("type")))
-            sort="name";
+        if (sort.isEmpty() || (!sort.equalsIgnoreCase("name") && !sort.equalsIgnoreCase("size") && !sort.equalsIgnoreCase("type")))
+            sort = "name";
         Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
         return pageable;
@@ -73,28 +77,27 @@ public class UserFileService {
     }
 
 
-
-    public Page<UserFile> getDeletedFiles(String ownerId, int page, int size, String sort, String sortDirection)  {
+    public Page<UserFile> getDeletedFiles(String ownerId, int page, int size, String sort, String sortDirection) {
         Pageable pageable = getPageable(page, size, sort, sortDirection);
         return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, pageable);
     }
 
     public UserFile getFileById(String fileId, String nationalId) {
-        Optional<UserFile> userFile=userFileRepository.findById(fileId);
-        if(!userFile.isPresent()){
+        Optional<UserFile> userFile = userFileRepository.findById(fileId);
+        if (!userFile.isPresent()) {
             throw new RuntimeException("File not found");
         }
         return userFile.get();
     }
 
     public UserFile uploadFile(MultipartFile uploadedFile,
-                                   String ownerId,
-                                   String folderId,
-                                   String folderPath,
-                                   String ownerName){
+                               String ownerId,
+                               String folderId,
+                               String folderPath,
+                               String ownerName) {
 
         String originalName = uploadedFile.getOriginalFilename();
-        String type = originalName.substring(originalName.lastIndexOf(".")+1);
+        String type = originalName.substring(originalName.lastIndexOf(".") + 1);
         String name = originalName.substring(0, originalName.lastIndexOf("."));
         String uniqueName = UUID.randomUUID().toString();
 
@@ -111,9 +114,9 @@ public class UserFileService {
                 .ownerId(ownerId)
                 .ownerName(ownerName)
                 .build();
-        try{
-            storageManager.saveFile(absolutePath, uploadedFile);}
-        catch (Exception ex){
+        try {
+            storageManager.saveFile(absolutePath, uploadedFile);
+        } catch (Exception ex) {
             log.error("Failed to save file: {}", absolutePath, ex);
             throw new RuntimeException("Failed to save file");
         }
@@ -156,9 +159,9 @@ public class UserFileService {
     public UserFile deleteFileHard(String fileId) {
         UserFile file = userFileRepository.findById(fileId)
                 .orElseThrow(() -> new RuntimeException("File not found"));
-        try{
+        try {
             storageManager.deleteFile(file.getFilePath());
-        } catch (Exception ex){
+        } catch (Exception ex) {
             log.error("Failed to delete file: {}", file.getFilePath(), ex);
             throw new CanNotDeleteFileException("Failed to delete file: ");
         }
