@@ -14,14 +14,22 @@
 
 
 
-
   <!-- Active Area -->
   <section class="active-area">
 
 
 
     <div class="section-header">
-      <h3 class="section-title">Items</h3>
+      <h3 class="section-title">Folders</h3>
+      <div class="view-controls">
+        <div class="view-toggle" role="group" aria-label="Folder view switch">
+          <button class="view-btn" [class.active]="folderViewMode()==='grid'" (click)="setFolderView('grid')" title="Grid view"><i class="pi pi-th-large"></i></button>
+          <button class="view-btn" [class.active]="folderViewMode()==='list'" (click)="setFolderView('list')" title="List view"><i class="pi pi-list"></i></button>
+        </div>
+        <button type="button" class="action-cta create-folder-cta" (click)="$event.stopPropagation(); openCreateFolderDialog()" aria-label="Create folder">
+          <i class="pi pi-folder-plus" aria-hidden="true"></i> Create
+        </button>
+      </div>
     </div>
 
 
@@ -30,73 +38,64 @@
     <p class="error-text" *ngIf="foldersError()">{{ foldersError() }}</p>
 
     <!-- Normal folders -->
-    <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingFolders() && !foldersError()">
+    <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingFolders() && !foldersError() && folderViewMode()==='grid'">
 
       <!-- Normal folders -->
-      <div class="drive-item" *ngFor="let folder of folders() || []" (click)="openFolder(folder)">
+      <div class="drive-item" [class.has-open-menu]="openMenuForId() === folder.id" *ngFor="let folder of folders() || []" (click)="openFolder(folder)">
         <div class="item-main">
-          <div class="item-icon" aria-hidden="true">
-            <svg viewBox="0 0 64 64" class="icon-svg">
-              <path d="M6 16h18l4 6h30v26a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V16z" fill="#f4c430" />
-              <path d="M6 16h20l3 5H6z" fill="#ffd666" />
-              <path d="M6 26h52v22a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V26z" fill="#f1b000" />
-            </svg>
-          </div>
+          <div class="item-icon" aria-hidden="true"><i class="pi pi-folder icon-svg icon-folder"></i></div>
           <div class="item-meta">
             <div class="item-name" [title]="folder.name">{{ folder.name }}</div>
             <div class="item-sub" [title]="folder.size">Size: {{ folder.size }} MB</div>
           </div>
         </div>
         <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleMenu(folder.id)"
-          aria-label="Open menu">
-          ⋯
-        </button>
+          aria-label="Open menu">⋯</button>
         <div class="menu-panel" *ngIf="openMenuForId() === folder.id" (click)="$event.stopPropagation()">
-          <button class="menu-item" (click)="downloadFolder(folder)">Download</button>
-          <button class="menu-item" (click)="showDetails(folder)">Details</button>
-          <button class="menu-item" (click)="updateFolder(folder)">Rename</button>
-          <button class="menu-item danger" (click)="deleteFolder(folder)">Delete</button>
+          <button class="menu-item" (click)="downloadFolder(folder)"><i class="pi pi-download"></i> Download</button>
+          <button class="menu-item" (click)="showDetails(folder)"><i class="pi pi-info-circle"></i> Details</button>
+          <button class="menu-item" (click)="openShareFolder(folder)"><i class="pi pi-share-alt"></i> Share</button>
+          <button class="menu-item" (click)="addFolderToFavorites(folder)"><i class="pi pi-star"></i> Add to favorites</button>
+          <button class="menu-item" (click)="updateFolder(folder)"><i class="pi pi-pencil"></i> Rename</button>
+          <button class="menu-item danger" (click)="deleteFolder(folder)"><i class="pi pi-trash"></i> Delete</button>
         </div>
       </div>
 
-
       <div class="drive-item empty" *ngIf="(folders() || []).length === 0">No folders</div>
-      <div>
+      <div></div>
+    </div>
+
+    <!-- Folders list view -->
+    <div class="docs-list folders-list" *ngIf="!inRecycleBin() && !loadingFolders() && !foldersError() && folderViewMode()==='list'">
+      <div class="list-header">
+        <div class="list-col name">Name</div>
+        <div class="list-col size">Size</div>
+        <div class="list-col actions-col"></div>
       </div>
+      <div class="list-row" *ngFor="let folder of folders() || []" (click)="openFolder(folder)">
+        <div class="list-col name" [title]="folder.name">{{ folder.name }}</div>
+        <div class="list-col size">{{ folder.size }} MB</div>
+        <div class="list-col actions-col" (click)="$event.stopPropagation()">
+          <button type="button" class="item-menu" (click)="toggleMenu(folder.id)" aria-label="Open menu">⋯</button>
+          <div class="menu-panel" *ngIf="openMenuForId() === folder.id">
+            <button class="menu-item" (click)="downloadFolder(folder)"><i class="pi pi-download"></i> Download</button>
+            <button class="menu-item" (click)="showDetails(folder)"><i class="pi pi-info-circle"></i> Details</button>
+            <button class="menu-item" (click)="openShareFolder(folder)"><i class="pi pi-share-alt"></i> Share</button>
+            <button class="menu-item" (click)="addFolderToFavorites(folder)"><i class="pi pi-star"></i> Add to favorites</button>
+            <button class="menu-item" (click)="updateFolder(folder)"><i class="pi pi-pencil"></i> Rename</button>
+            <button class="menu-item danger" (click)="deleteFolder(folder)"><i class="pi pi-trash"></i> Delete</button>
+          </div>
+        </div>
+      </div>
+      <div class="list-empty" *ngIf="(folders() || []).length === 0">No folders</div>
     </div>
 
     <br>
     <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingFolders() && !foldersError()">
-      <!-- Add Folder -->
-      <button type="button" class="drive-item add-tile" (click)="$event.stopPropagation(); addFolder()"
-        aria-label="Add folder">
-        <div class="item-main">
-          <div class="item-icon" aria-hidden="true">
-            <svg viewBox="0 0 64 64" class="icon-svg">
-              <path d="M6 16h18l4 6h30v26a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V16z" fill="#f4c430" />
-              <path d="M6 16h20l3 5H6z" fill="#ffd666" />
-              <path d="M6 26h52v22a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V26z" fill="#f1b000" />
-              <g class="plus-overlay" fill="#111">
-                <rect x="30" y="28" width="4" height="16" rx="2"></rect>
-                <rect x="23" y="35" width="18" height="4" rx="2"></rect>
-              </g>
-            </svg>
-          </div>
-          <div class="item-meta">
-            <div class="item-name">Add new folder</div>
-            <div class="item-sub">Create a folder</div>
-          </div>
-        </div>
-      </button>
 
       <div class="drive-item" *ngIf="currentCrumb.id === null" (click)="openRecycleBin()">
         <div class="item-main">
-          <div class="item-icon" aria-hidden="true">
-            <svg viewBox="0 0 64 64" class="icon-svg">
-              <path d="M20 18h24l2 38H18l2-38zm8-6h8l2 6H26l2-6z" fill="#ccc" />
-              <path d="M22 22h20v30H22z" fill="#999" />
-            </svg>
-          </div>
+          <div class="item-icon" aria-hidden="true"><i class="pi pi-trash icon-svg icon-trash"></i></div>
           <div class="item-meta">
             <div class="item-name">Recycle Bin</div>
             <div class="item-sub">Deleted folders</div>
@@ -115,12 +114,7 @@
       <div class="drive-grid">
         <div class="drive-item" *ngFor="let folder of deletedFolders() || []">
           <div class="item-main" (click)="$event.stopPropagation()">
-            <div class="item-icon" aria-hidden="true">
-              <svg viewBox="0 0 64 64" class="icon-svg">
-                <path d="M20 18h24l2 38H18l2-38zm8-6h8l2 6H26l2-6z" fill="#ccc" />
-                <path d="M22 22h20v30H22z" fill="#999" />
-              </svg>
-            </div>
+            <div class="item-icon" aria-hidden="true"><i class="pi pi-trash icon-svg icon-trash"></i></div>
             <div class="item-meta">
               <div class="item-name">{{ folder.name }}</div>
               <div class="item-sub">{{ folder.size }} MB</div>
@@ -129,8 +123,8 @@
           <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)"
             aria-label="Open menu">⋯</button>
           <div class="menu-panel" *ngIf="openRecycleBinMenuId() === folder.id" (click)="$event.stopPropagation()">
-            <button class="menu-item" (click)="$event.stopPropagation(); restoreFolder(folder)">Restore</button>
-            <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteFolder(folder)">Delete
+            <button class="menu-item" (click)="$event.stopPropagation(); restoreFolder(folder)"><i class="pi pi-undo"></i> Restore</button>
+            <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteFolder(folder)"><i class="pi pi-trash"></i> Delete
               permanently</button>
           </div>
         </div>
@@ -141,19 +135,8 @@
         <h3 class="section-title">Deleted Files</h3>
       </div>
 
-      <section class="site-search">
+      <section class="site-search" *ngIf="viewMode()==='grid'">
         <div class="search-container">
-
-          <div class="search-type-selector">
-            <div class="control-group">
-              <label class="control-label" for="docsSearchBy">Search by</label>
-              <select id="docsSearchBy" class="control-select" [ngModel]="docsQuery().searchBy" name="docsSearchBy"
-                (ngModelChange)="onDocsSearchByChange($event)">
-                <option value="name">Name</option>
-                <option value="type">Type</option>
-              </select>
-            </div>
-          </div>
 
           <form class="search-form" (submit)="$event.preventDefault(); onBinSearch()">
             <input class="search-input" type="search" aria-label="Search deleted files"
@@ -164,7 +147,14 @@
           </form>
         </div>
         <div class="search-controls">
-
+          <div class="control-group">
+              <label class="control-label" for="docsSearchBy">Search by</label>
+              <select id="docsSearchBy" class="control-select" [ngModel]="docsQuery().searchBy" name="docsSearchBy"
+                (ngModelChange)="onDocsSearchByChange($event)">
+                <option value="name">Name</option>
+                <option value="type">Type</option>
+              </select>
+            </div>
           <div class="control-group">
             <label class="control-label" for="binSortBy">Sort by</label>
             <select id="binSortBy" class="control-select" [ngModel]="binQuery().sort" name="binSortBy"
@@ -199,12 +189,7 @@
       <div class="drive-grid">
         <div class="drive-item" *ngFor="let doc of deletedDocs() || []">
           <div class="item-main" (click)="$event.stopPropagation()">
-            <div class="item-icon" aria-hidden="true">
-              <svg viewBox="0 0 64 64" class="icon-svg">
-                <path d="M14 8h28l8 8v40H14z" fill="#60a5fa" />
-                <path d="M42 8v12h12" fill="#93c5fd" />
-              </svg>
-            </div>
+            <div class="item-icon" aria-hidden="true"><i class="pi pi-file icon-svg icon-doc-deleted"></i></div>
             <div class="item-meta">
               <div class="item-name" [title]="docDisplayName(doc)">{{ docDisplayName(doc) }}</div>
               <div class="item-sub" [title]="doc.type">{{ doc.type || 'document' }}</div>
@@ -213,21 +198,31 @@
           <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleRecycleBinMenu(doc.id)"
             aria-label="Open menu">⋯</button>
           <div class="menu-panel" *ngIf="openRecycleBinMenuId() === doc.id" (click)="$event.stopPropagation()">
-            <button class="menu-item" (click)="$event.stopPropagation(); restoreDocument(doc)">Restore</button>
-            <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteDocument(doc)">Delete
+            <button class="menu-item" (click)="$event.stopPropagation(); restoreDocument(doc)"><i class="pi pi-undo"></i> Restore</button>
+            <button class="menu-item danger" (click)="$event.stopPropagation(); hardDeleteDocument(doc)"><i class="pi pi-trash"></i> Delete
               permanently</button>
           </div>
         </div>
         <div class="drive-item empty" *ngIf="(deletedDocs() || []).length === 0">No deleted files found.</div>
       </div>
 
-      <div class="pagination" *ngIf="(binDocsPage()?.totalPages || 0) > 1">
+      <div class="pagination">
         <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) === 0"
           (click)="goToBinPage((binDocsPage()?.number || 0) - 1)">Prev</button>
         <button class="page-btn" *ngFor="let p of listPages(binDocsPage()?.totalPages || 0); let i = index"
           [class.active]="i === (binDocsPage()?.number || 0)" (click)="goToBinPage(i)">{{ i + 1 }}</button>
         <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) >= ((binDocsPage()?.totalPages || 1) - 1)"
           (click)="goToBinPage((binDocsPage()?.number || 0) + 1)">Next</button>
+        <label class="page-size-control">
+          Page size
+          <select class="control-select" [ngModel]="binQuery().size" name="binPageSizeBottom" (ngModelChange)="onBinSizeChange($event)">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="30">30</option>
+            <option [ngValue]="40">40</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </label>
       </div>
 
 
@@ -239,139 +234,221 @@
     <section class="documents-section" *ngIf="(files() || []).length || currentCrumb.id !== null">
       <div class="docs-header">
         <h4 class="docs-title">Documents</h4>
+        <div class="view-controls">
+          <div class="view-toggle" role="group" aria-label="View switch">
+            <button class="view-btn" [class.active]="viewMode()==='grid'" (click)="setView('grid')" title="Grid view"><i class="pi pi-th-large"></i></button>
+            <button class="view-btn" [class.active]="viewMode()==='list'" (click)="setView('list')" title="List view"><i class="pi pi-list"></i></button>
+          </div>
+          <button class="action-cta upload-cta" title="Upload document" (click)="openUploadDialog()"
+            aria-label="Upload document" [disabled]="currentCrumb.id === null">
+            <i class="pi pi-upload" aria-hidden="true"></i> Upload
+          </button>
+        </div>
       </div>
 
       <section class="site-search">
         <div class="search-container">
-          <div class="search-type-selector">
-            <div class="control-group">
-              <label class="control-label" for="docsSearchBy">Search by</label>
-              <select id="docsSearchBy" class="control-select" [ngModel]="docsQuery().searchBy" name="docsSearchBy"
-                (ngModelChange)="onDocsSearchByChange($event)">
-                <option value="name">Name</option>
-                <option value="type">Type</option>
-              </select>
-            </div>
-          </div>
-
           <form class="search-form" (submit)="$event.preventDefault(); onDocsSearch()">
-            <input class="search-input" type="search" aria-label="Search" placeholder="Search documents"
-              [ngModel]="docsQuery().keyword" (ngModelChange)="onDocsKeywordChange($event)" name="docsKeyword" />
+            <div class="search-field">
+              <input class="search-input" type="search" aria-label="Search" placeholder="Search documents"
+                [ngModel]="docsQuery().keyword" (ngModelChange)="onDocsKeywordChange($event)" name="docsKeyword" />
+              <button type="button" class="search-filter" (click)="$event.stopPropagation(); toggleDocsFilter()" aria-label="Open filter">Filter</button>
+              <div class="filter-panel" *ngIf="docsFilterOpen()" (click)="$event.stopPropagation()">
+                <div class="filter-row">
+                  <span class="control-label">Search by</span>
+                  <label><input type="radio" name="docsSearchByRadio" [checked]="docsQuery().searchBy==='name'" (change)="onDocsSearchByChange('name')"> Name</label>
+                  <label><input type="radio" name="docsSearchByRadio" [checked]="docsQuery().searchBy==='type'" (change)="onDocsSearchByChange('type')"> Type</label>
+                </div>
+              </div>
+            </div>
             <button class="search-button" type="submit">Search</button>
-            <button *ngIf="docsQuery().keyword" type="button" class="clear-button"
-              (click)="clearDocsSearch()">✕</button>
+            <button *ngIf="docsQuery().keyword" type="button" class="clear-button" (click)="clearDocsSearch()">✕</button>
           </form>
-        </div>
-        <div class="search-controls">
-
-          <div class="control-group">
-            <label class="control-label" for="docsSortBy">Sort by</label>
-            <select id="docsSortBy" class="control-select" [ngModel]="docsQuery().sort" name="docsSortBy"
-              (ngModelChange)="onDocsSortChange($event)">
-              <option value="name">Name</option>
-              <option value="type">Type</option>
-              <option value="size">Size</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label class="control-label" for="docsSortDir">Direction</label>
-            <select id="docsSortDir" class="control-select" [ngModel]="docsQuery().dir" name="docsSortDir"
-              (ngModelChange)="onDocsDirChange($event)">
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label class="control-label" for="docsPageSize">Page size</label>
-            <select id="docsPageSize" class="control-select" [ngModel]="docsQuery().size" name="docsPageSize"
-              (ngModelChange)="onDocsSizeChange($event)">
-              <option [ngValue]="10">10</option>
-              <option [ngValue]="20">20</option>
-              <option [ngValue]="30">30</option>
-              <option [ngValue]="40">40</option>
-              <option [ngValue]="50">50</option>
-            </select>
-          </div>
         </div>
       </section>
 
       <p class="status-text" *ngIf="loadingDocs()">Loading documents...</p>
       <p class="error-text" *ngIf="docsError()">{{ docsError() }}</p>
 
-      <div class="drive-grid" *ngIf="!loadingDocs() && !docsError()">
-        <div class="drive-item" *ngFor="let d of files() || []">
-          <div class="item-main">
-            <div class="item-icon" aria-hidden="true">
-              <svg viewBox="0 0 64 64" class="icon-svg">
-                <path d="M14 8h28l8 8v40H14z" fill="#60a5fa" />
-                <path d="M42 8v12h12" fill="#93c5fd" />
-              </svg>
+      <div *ngIf="!loadingDocs() && !docsError()">
+        <!-- Grid view -->
+        <div class="drive-grid" *ngIf="viewMode()==='grid'">
+          <div class="drive-item" [class.has-open-menu]="openDocMenuForId() === d.id" *ngFor="let d of files() || []">
+            <div class="item-main">
+              <div class="item-icon" aria-hidden="true"><i class="pi pi-file icon-svg icon-doc"></i></div>
+              <div class="item-meta">
+                <div class="item-name" [title]="docDisplayName(d)">{{ docDisplayName(d) }}</div>
+                <div class="item-sub" [title]="d.type || ''">{{ d.type || 'document' }}</div>
+              </div>
             </div>
-            <div class="item-meta">
-              <div class="item-name" [title]="docDisplayName(d)">{{ docDisplayName(d) }}</div>
-              <div class="item-sub" [title]="d.type || ''">{{ d.type || 'document' }}</div>
+            <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleDocMenu(d.id)"
+              aria-label="Open menu">⋯</button>
+            <div class="menu-panel" *ngIf="openDocMenuForId() === d.id" (click)="$event.stopPropagation()">
+              <button class="menu-item" (click)="downloadDocument(d)"><i class="pi pi-download"></i> Download</button>
+              <button class="menu-item" (click)="showDocDetails(d)"><i class="pi pi-info-circle"></i> Details</button>
+              <button class="menu-item" (click)="openShareDocument(d)"><i class="pi pi-share-alt"></i> Share</button>
+              <button class="menu-item" (click)="addDocumentToFavorites(d)"><i class="pi pi-star"></i> Add to favorites</button>
+              <button class="menu-item" (click)="openRenameDocument(d)"><i class="pi pi-pencil"></i> Rename</button>
+              <button class="menu-item danger" (click)="deleteDocument(d)"><i class="pi pi-trash"></i> Delete</button>
             </div>
           </div>
-          <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleDocMenu(d.id)"
-            aria-label="Open menu">⋯</button>
-          <div class="menu-panel" *ngIf="openDocMenuForId() === d.id" (click)="$event.stopPropagation()">
-            <button class="menu-item" (click)="downloadDocument(d)">Download</button>
-            <button class="menu-item" (click)="showDocDetails(d)">Details</button>
-            <button class="menu-item danger" (click)="deleteDocument(d)">Delete</button>
+          <div class="drive-item empty" *ngIf="(files() || []).length === 0">No documents found.</div>
+
+          <div class="section-actions">
+            <button class="retry-button" *ngIf="foldersError() || docsError()" (click)="loadActiveArea()">Retry</button>
           </div>
         </div>
-        <div class="drive-item empty" *ngIf="(files() || []).length === 0">No documents found.</div>
 
-        <div class="section-actions">
-          <input #documentInput type="file" class="hidden-document-input" accept="*/*"
-            (change)="onDocumentSelected($event)">
-          <button class="icon-button" title="Upload document" (click)="triggerUpload(documentInput)"
-            aria-label="Upload document" [disabled]="currentCrumb.id === null">
-            <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
-              <path fill="#111" d="M5 20h14a2 2 0 0 0 2-2v-4h-2v4H5v-4H3v4a2 2 0 0 0 2 2zm7-16-5 5h3v6h4v-6h3l-5-5z" />
-            </svg>
-          </button>
-          <button class="retry-button" *ngIf="foldersError() || docsError()" (click)="loadActiveArea()">Retry</button>
+        <!-- List view -->
+        <div class="docs-list" *ngIf="viewMode()==='list'">
+          <div class="list-header">
+            <button class="list-col name" (click)="toggleSort('name')">Name <i class="pi" [ngClass]="{'pi-sort-amount-up': docsQuery().dir==='asc' && docsQuery().sort==='name', 'pi-sort-amount-down': docsQuery().dir==='desc' && docsQuery().sort==='name', 'pi-sort-alt': docsQuery().sort!=='name'}"></i></button>
+            <button class="list-col type" (click)="toggleSort('type')">Type <i class="pi" [ngClass]="{'pi-sort-amount-up': docsQuery().dir==='asc' && docsQuery().sort==='type', 'pi-sort-amount-down': docsQuery().dir==='desc' && docsQuery().sort==='type', 'pi-sort-alt': docsQuery().sort!=='type'}"></i></button>
+            <button class="list-col size" (click)="toggleSort('size')">Size <i class="pi" [ngClass]="{'pi-sort-amount-up': docsQuery().dir==='asc' && docsQuery().sort==='size', 'pi-sort-amount-down': docsQuery().dir==='desc' && docsQuery().sort==='size', 'pi-sort-alt': docsQuery().sort!=='size'}"></i></button>
+            <div class="list-col actions-col"></div>
+          </div>
+          <div class="list-row" *ngFor="let d of files() || []">
+            <div class="list-col name" [title]="docDisplayName(d)">{{ docDisplayName(d) }}</div>
+            <div class="list-col type">{{ d.type || 'document' }}</div>
+            <div class="list-col size">{{ d.size | documentSize }}</div>
+            <div class="list-col actions-col">
+              <button type="button" class="item-menu" (click)="$event.stopPropagation(); toggleDocMenu(d.id)" aria-label="Open menu">⋯</button>
+              <div class="menu-panel" *ngIf="openDocMenuForId() === d.id" (click)="$event.stopPropagation()">
+                <button class="menu-item" (click)="downloadDocument(d)"><i class="pi pi-download"></i> Download</button>
+                <button class="menu-item" (click)="showDocDetails(d)"><i class="pi pi-info-circle"></i> Details</button>
+                <button class="menu-item" (click)="openShareDocument(d)"><i class="pi pi-share-alt"></i> Share</button>
+                <button class="menu-item" (click)="addDocumentToFavorites(d)"><i class="pi pi-star"></i> Add to favorites</button>
+                <button class="menu-item" (click)="openRenameDocument(d)"><i class="pi pi-pencil"></i> Rename</button>
+                <button class="menu-item danger" (click)="deleteDocument(d)"><i class="pi pi-trash"></i> Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="list-empty" *ngIf="(files() || []).length === 0">No documents found.</div>
         </div>
-
       </div>
 
-      <div class="pagination" *ngIf="(docsPage()?.totalPages || 0) > 1">
+      <div class="pagination">
         <button class="page-btn" [disabled]="(docsPage()?.number || 0) === 0"
           (click)="goToDocsPage((docsPage()?.number || 0) - 1)">Prev</button>
         <button class="page-btn" *ngFor="let p of listPages(docsPage()?.totalPages || 0); let i = index"
           [class.active]="i === (docsPage()?.number || 0)" (click)="goToDocsPage(i)">{{ i + 1 }}</button>
         <button class="page-btn" [disabled]="(docsPage()?.number || 0) >= ((docsPage()?.totalPages || 1) - 1)"
           (click)="goToDocsPage((docsPage()?.number || 0) + 1)">Next</button>
+        <label class="page-size-control">
+          Page size
+          <select class="control-select" [ngModel]="docsQuery().size" name="docsPageSizeBottom" (ngModelChange)="onDocsSizeChange($event)">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="30">30</option>
+            <option [ngValue]="40">40</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </label>
       </div>
     </section>
-    <div style="height:  100px;"></div>
+    <div class="content-spacer"></div>
   </section>
 
-  <!-- Details side panel (folder) -->
-  <aside class="details-panel" *ngIf="showDetailsFor() as det">
-    <div class="details-header">
-      <h4 class="details-title">Folder details</h4>
-      <button class="close-btn" (click)="showDetailsFor.set(null)">Close</button>
+  <!-- Details modal (folder) -->
+  <app-modal [visible]="!!showDetailsFor()" title="Folder Details" (close)="showDetailsFor.set(null)" [showFooter]="false">
+    <div class="details-content">
+      <div class="detail-item">
+        <label class="detail-label">Name</label>
+        <p class="detail-value">{{ showDetailsFor()?.name }}</p>
+      </div>
+      <div class="detail-item">
+        <label class="detail-label">Owner</label>
+        <p class="detail-value">{{ showDetailsFor()?.ownerName }}</p>
+      </div>
+      <div class="detail-item">
+        <label class="detail-label">Size</label>
+        <p class="detail-value">{{ showDetailsFor()?.size }} MB</p>
+      </div>
     </div>
-    <div class="details-body">
-      <p><strong>Name:</strong> {{ det.name }}</p>
-      <p><strong>Owner:</strong> {{ det.ownerName }}</p>
-      <p><strong>Size:</strong> {{ det.size }} MB</p>
-    </div>
-  </aside>
+  </app-modal>
 
-  <!-- Details side panel (document) -->
-  <aside class="details-panel" *ngIf="showDocDetailsFor() as ddet">
-    <div class="details-header">
-      <h4 class="details-title">Document details</h4>
-      <button class="close-btn" (click)="showDocDetailsFor.set(null)">Close</button>
+  <!-- Details modal (document) -->
+  <app-modal [visible]="!!showDocDetailsFor()" title="Document Details" (close)="showDocDetailsFor.set(null)" [showFooter]="false">
+    <div class="details-content" *ngIf="showDocDetailsFor() as doc">
+      <div class="detail-item">
+        <label class="detail-label">Name</label>
+        <p class="detail-value">{{ docDisplayName(doc) }}</p>
+      </div>
+      <div class="detail-item">
+        <label class="detail-label">Type</label>
+        <p class="detail-value">{{ doc.type || 'document' }}</p>
+      </div>
+      <div class="detail-item">
+        <label class="detail-label">Size</label>
+        <p class="detail-value">{{ doc.size | documentSize }}</p>
+      </div>
+      <div class="detail-item">
+        <label class="detail-label">Owner</label>
+        <p class="detail-value">{{ doc.ownerName }}</p>
+      </div>
     </div>
-    <div class="details-body">
-      <p><strong>Name:</strong> {{ docDisplayName(ddet) }}</p>
-      <p><strong>Type:</strong> {{ ddet.type || 'document' }}</p>
-      <p><strong>Size:</strong> {{ ddet.size | documentSize }}</p>
-      <p><strong>Owner:</strong> {{ ddet.ownerName }}</p>
+  </app-modal>
+
+  <!-- Themed modals -->
+  <app-modal [visible]="!!renameFolderTarget()" title="Rename folder" (close)="renameFolderTarget.set(null)" (confirm)="submitRename()">
+    <label class="field"><span class="label">New name</span>
+      <input
+        #renameFolderInput
+        class="input"
+        [ngModel]="renameName()"
+        (ngModelChange)="renameName.set($event)"
+        (keydown.enter)="submitRename()" />
+    </label>
+  </app-modal>
+
+  <app-modal [visible]="!!confirmDelete()" [title]="'Delete ' + (confirmDelete()?.type === 'folder' ? 'folder' : 'document')" (close)="confirmDelete.set(null)" (confirm)="confirmDeleteAction()">
+    <p>Are you sure you want to delete <strong>{{ confirmDelete()?.name }}</strong>?</p>
+  </app-modal>
+
+  <app-modal [visible]="!!shareTarget()" title="Share" (close)="shareTarget.set(null)" (confirm)="confirmShare()">
+    <div class="share-form">
+      <p class="share-text">Share <strong>{{ shareTarget()?.name }}</strong> with:</p>
+      <label class="field">
+        <span class="label">Email address</span>
+        <input
+          type="email"
+          class="input"
+          placeholder="user@example.com"
+          [ngModel]="shareEmail()"
+          (ngModelChange)="shareEmail.set($event)"
+          #shareEmailInput
+          (keydown.enter)="confirmShare()"
+          required />
+      </label>
+      <small class="helper-text" *ngIf="shareEmail() && !isValidEmail(shareEmail())">Please enter a valid email address</small>
     </div>
-  </aside>
+  </app-modal>
+
+  <app-modal [visible]="createFolderOpen()" title="Create folder" (close)="createFolderOpen.set(false)" (confirm)="submitCreateFolder()">
+    <label class="field"><span class="label">Folder name</span>
+      <input
+        #createFolderInput
+        class="input"
+        [ngModel]="createFolderName()"
+        (ngModelChange)="createFolderName.set($event)"
+        (keydown.enter)="submitCreateFolder()" />
+    </label>
+  </app-modal>
+
+  <app-modal [visible]="!!renameDocTarget()" title="Rename document" (close)="renameDocTarget.set(null)" (confirm)="submitRenameDocument()">
+    <label class="field"><span class="label">New name</span>
+      <input
+        #renameDocInput
+        class="input"
+        [ngModel]="renameDocName()"
+        (ngModelChange)="renameDocName.set($event)"
+        (keydown.enter)="submitRenameDocument()" />
+    </label>
+  </app-modal>
+
+  <app-modal [visible]="uploadDialogOpen()" title="Upload document" (close)="closeUploadDialog()" (confirm)="confirmUpload()">
+    <label class="field"><span class="label">Choose file</span>
+      <input type="file" class="input" (change)="onUploadFileChange($event)" />
+    </label>
+  </app-modal>
 </div>

@@ -1,28 +1,24 @@
 <nav class="site-navbar">
   <div class="nav-inner">
     <a class="brand" routerLink="/home" aria-label="Home">
-      <span class="brand-logo" aria-hidden="true">📁</span>
+      <span class="brand-logo" aria-hidden="true"><i class="pi pi-folder"></i></span>
       <span class="brand-name">DMS</span>
     </a>
     <p class="hello-message" *ngIf="userName() && isLoggedIn()">{{ "Hello, " + userName() + "!" }}</p>
 
     <div class="nav-actions">
-      <a class="nav-link" routerLink="/home">Home</a>
+      <a class="nav-link" routerLink="/home"><i class="pi pi-home" aria-hidden="true"></i> Home</a>
 
       <ng-container *ngIf="isLoggedIn(); else loggedOut">
-        <!-- add Hello message -->
-         
-
-        <a class="nav-link" routerLink="/profile">Profile</a>
-        <button class="nav-button" (click)="logout()">Logout</button>
-        
+        <a class="nav-link" routerLink="/profile"><i class="pi pi-user" aria-hidden="true"></i> Profile</a>
+        <button class="nav-button" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i> Logout</button>
       </ng-container>
 
       <ng-template #loggedOut>
-        <a class="nav-link" routerLink="/login">Login</a>
-        <a class="nav-link" routerLink="/register">Register</a>
+        <a class="nav-link" routerLink="/login"><i class="pi pi-sign-in" aria-hidden="true"></i> Login</a>
+        <a class="nav-link" routerLink="/register"><i class="pi pi-user-plus" aria-hidden="true"></i> Register</a>
       </ng-template>
-      
+
     </div>
   </div>
 </nav>

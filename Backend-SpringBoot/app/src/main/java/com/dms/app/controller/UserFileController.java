@@ -33,6 +33,8 @@ public class UserFileController {
     }
 
     // sort by name, type, size
+
+    ///  search param  to do
     @GetMapping("/search")
     public ResponseEntity<Page<UserFile>> searchFiles(
             @RequestParam(required = false) String name,
@@ -76,13 +78,14 @@ public class UserFileController {
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'READ')")
     public ResponseEntity<UserFile> getFileById(@PathVariable String fileId, Authentication authentication) {
         String nationalId = getNationalId(authentication);
-        UserFile file = userFileService.getFileById(fileId, nationalId);
+        UserFile file = userFileService.getFileById(fileId);
         return ResponseEntity.ok(file);
     }
 
     @PostMapping(value = "/upload/{folderId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'WRITE')")
-    public ResponseEntity<UserFile> uploadFile(@RequestParam(value = "file", required = false) MultipartFile uploadedFile, @PathVariable String folderId, Authentication authentication) {
+    public ResponseEntity<UserFile> uploadFile(@RequestParam(value = "file", required = false) MultipartFile uploadedFile,
+                                               @PathVariable String folderId, Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String nationalId = userDetails.getNationalId();
         String ownerName = userDetails.getFullName();

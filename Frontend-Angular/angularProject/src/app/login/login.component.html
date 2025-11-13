@@ -1,32 +1,78 @@
-<div class="auth-wrapper">
-  <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
-    <h2 class="auth-title">Sign in</h2>
+<div class="login-page wave-surface" [class.loaded]="loaded">
+  <div class="panel right-panel" role="main">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login-form" aria-labelledby="login-heading">
+      <h1 id="login-heading" class="login-heading">Welcome Back</h1>
+      <p class="login-subtitle">Login to your Document Management System</p>
 
-    <label class="field">
-      <span class="label">Email</span>
-      <input class="input" type="email" formControlName="email" />
-      <small class="error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
-        <span *ngIf="form.get('email')?.errors?.['required']">Email is required.</span>
-        <span *ngIf="form.get('email')?.errors?.['email']">Invalid email.</span>
-      </small>
-      <small class="error" *ngIf="serverErrors['email']">{{ serverErrors['email'] }}</small>
-    </label>
+      <label class="field">
+        <span class="field-label">Email</span>
+        <div class="input-wrapper">
+          <i class="pi pi-envelope icon" aria-hidden="true"></i>
+          <input class="input" type="email" formControlName="email" placeholder="you@company.com" aria-label="Email address" />
+        </div>
+        <small class="error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+          <span *ngIf="form.get('email')?.errors?.['required']">Email is required.</span>
+          <span *ngIf="form.get('email')?.errors?.['email']">Invalid email address.</span>
+        </small>
+        <small class="error" *ngIf="serverErrors['email']">{{ serverErrors['email'] }}</small>
+      </label>
 
-    <label class="field">
-      <span class="label">Password</span>
-      <input class="input" type="password" formControlName="password" />
-      <small class="error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
-        <span *ngIf="form.get('password')?.errors?.['required']">Password is required.</span>
-        <span *ngIf="form.get('password')?.errors?.['minlength']">Minimum 8 characters.</span>
-      </small>
-      <small class="error" *ngIf="serverErrors['password']">{{ serverErrors['password'] }}</small>
-    </label>
+      <label class="field">
+        <span class="field-label">Password</span>
+        <div class="input-wrapper">
+          <i class="pi pi-lock icon" aria-hidden="true"></i>
+          <input class="input" [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Enter your password" aria-label="Password" />
+        </div>
+        <small class="error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+          <span *ngIf="form.get('password')?.errors?.['required']">Password is required.</span>
+          <span *ngIf="form.get('password')?.errors?.['minlength']">Minimum 8 characters.</span>
+        </small>
+        <small class="error" *ngIf="serverErrors['password']">{{ serverErrors['password'] }}</small>
+      </label>
 
-    <div class="actions">
-      <button class="btn" type="submit" [disabled]="loading">{{ loading ? 'Signing in...' : 'Sign in' }}</button>
-      <a class="link" routerLink="/register">Create account</a>
-    </div>
+      <div class="form-utilities">
+        <div class="utility-left">
+          <label class="checkbox">
+            <input type="checkbox" formControlName="remember" aria-label="Keep me logged in" />
+            <span class="checkbox-label">Keep me logged in</span>
+          </label>
 
-    <p class="submit-error" *ngIf="error">{{ error }}</p>
-  </form>
+          <label class="checkbox">
+            <input type="checkbox" [checked]="showPassword" (change)="togglePassword()" aria-label="Show password" />
+            <span class="checkbox-label">Show password</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit" [disabled]="loading" [attr.aria-disabled]="loading ? 'true' : 'false'">
+          <span *ngIf="!loading">Login</span>
+          <span *ngIf="loading">Signing in...</span>
+        </button>
+        <div class="actions-links">
+          <a class="link forgot-link" routerLink="/forgot">Forgot Password?</a>
+          <a class="link create-account" routerLink="/register">Create account</a>
+        </div>
+      </div>
+
+      <p class="submit-error" *ngIf="error" role="alert">{{ error }}</p>
+
+      <div class="divider" aria-hidden="true"><span>Or login with</span></div>
+
+      <div class="socials" role="group" aria-label="Social login">
+        <button class="social-btn" type="button" (click)="socialLogin('apple')" aria-label="Sign in with Apple">
+          <i class="pi pi-apple icon" aria-hidden="true"></i>
+        </button>
+        <button class="social-btn" type="button" (click)="socialLogin('twitter')" aria-label="Sign in with Twitter">
+          <i class="pi pi-twitter icon" aria-hidden="true"></i>
+        </button>
+        <button class="social-btn" type="button" (click)="socialLogin('google')" aria-label="Sign in with Google">
+          <i class="pi pi-google icon" aria-hidden="true"></i>
+        </button>
+        <button class="social-btn" type="button" (click)="socialLogin('facebook')" aria-label="Sign in with Facebook">
+          <i class="pi pi-facebook icon" aria-hidden="true"></i>
+        </button>
+      </div>
+    </form>
+  </div>
 </div>

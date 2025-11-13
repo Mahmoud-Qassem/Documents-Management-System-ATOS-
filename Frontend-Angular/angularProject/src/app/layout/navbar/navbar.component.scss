@@ -2,8 +2,10 @@
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: rgb(6, 0, 109);
-    border-bottom: 1px solid var(--surface-muted)
+    background: var(--accent-strong);
+    border-bottom: 1px solid var(--surface-muted);
+    transition: background var(--transition-slow) var(--easing-ease);
+    color: #fff;
 }
 
 .nav-inner {
@@ -12,7 +14,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px
+    padding: 10px 16px;
 }
 
 .brand {
@@ -20,7 +22,12 @@
     align-items: center;
     gap: 8px;
     color: inherit;
-    text-decoration: none
+    text-decoration: none;
+    transition: transform var(--transition-normal) var(--easing-ease);
+}
+
+.brand:hover {
+    transform: scale(1.05);
 }
 
 .brand-logo {
@@ -30,42 +37,62 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--pill-accent, #0ea5e9);
+    background: var(--pill-accent);
     color: #fff;
-    font-size: 16px
+    font-size: 16px;
+    transition: all var(--transition-normal) var(--easing-ease);
+}
+
+.brand-logo:hover {
+    box-shadow: 0 0 12px rgba(2, 100, 153, 0.4);
+    transform: rotate(5deg);
 }
 
 .brand-name {
     font-weight: 600;
-    color: white;
+    color: #fff;
 }
 
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 12px
+    gap: 12px;
 }
 
 .nav-link {
-    color: #fcfcfc;
+    color: #fff;
     font-size: large;
     text-decoration: none;
     padding: 6px 8px;
-    border-radius: 6px
+    border-radius: 6px;
+    transition: all var(--transition-normal) var(--easing-ease);
 }
 
 .nav-link:hover {
-    background: var(--surface-muted)
+    background: var(--surface-muted);
+    transform: translateY(-2px);
 }
 
 .nav-button {
-    background: var(--pill-accent, #0ea5e9);
+    background: var(--pill-accent);
     color: #fff;
     border: none;
     border-radius: 6px;
     padding: 6px 10px;
-    cursor: pointer
+    cursor: pointer;
+    transition: all var(--transition-normal) var(--easing-ease);
 }
-.hello-message{
-    color: white;
+
+.nav-button:hover {
+    box-shadow: 0 4px 12px rgba(2, 100, 153, 0.3);
+    transform: translateY(-2px);
+}
+
+.nav-button:active {
+    transform: translateY(0);
+}
+
+.hello-message {
+    color: #fff;
+    transition: color var(--transition-normal) var(--easing-ease);
 }

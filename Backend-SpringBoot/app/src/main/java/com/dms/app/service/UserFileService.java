@@ -85,7 +85,7 @@ public class UserFileService {
         return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, pageable);
     }
 
-    public UserFile getFileById(String fileId, String nationalId) {
+    public UserFile getFileById(String fileId) {
         Optional<UserFile> userFile = userFileRepository.findById(fileId);
         if (!userFile.isPresent()) {
             throw new RuntimeException("File not found");
@@ -123,8 +123,8 @@ public class UserFileService {
             log.error("Failed to save file: {}", absolutePath, ex);
             throw new RuntimeException("Failed to save file");
         }
-
         file = userFileRepository.save(file);
+
 
 
         log.info("Uploaded file '{}' to path: {}", originalName, absolutePath);
@@ -132,7 +132,7 @@ public class UserFileService {
     }
 
     public Resource downloadFile(String fileId, String requesterId) {
-        UserFile file = getFileById(fileId, requesterId);
+        UserFile file = getFileById(fileId);
         File toBeDownloaded = storageManager.getFile(file.getFilePath());
         return new FileSystemResource(toBeDownloaded);
     }

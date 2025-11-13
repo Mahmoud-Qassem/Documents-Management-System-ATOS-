@@ -1,27 +1,312 @@
-/* Global theme variables and base styles */
+// Import PrimeNG icons
+@import "primeicons/primeicons.css";
 
 :root {
   /* Navbar sizing */
   --navbar-height: 64px;
 
-  /* Brand palette (requested) */
-  --brand-900: #010248;
-  --brand-800: #01306c;
-  --brand-700: #026499;
+  /* Brand palette (orange theme) */
+  --brand-900: #7c2d12; /* orange-900 */
+  --brand-800: #ea580c; /* orange-600 */
+  --brand-700: #f59e0b; /* amber-ish accent for hovers */
 
   /* Semantic mapping */
-  --accent: var(--brand-700);
+  --accent: var(--brand-800);
   --accent-strong: var(--brand-900);
-  --surface-bg: #ffffff; /* very light base to complement palette */
-  --surface-muted: #0a027d; /* accent light */
-  --surface-card: #ffffff;
-  --text-main: #ffffff;
-  --text-muted: #cc0909;
+  --surface-bg: #fff7ed; /* orange-50 */
+  --surface-muted: #fed7aa; /* orange-200 */
+  --surface-card: #ffffff; /* cards stay white */
+  --text-main: #0f172a; /* dark for readability */
+  --text-muted: #7c2d12; /* deep orange for subtle text */
 
   /* Backwards compatibility */
   --pill-accent: var(--accent);
+
+  /* Animation timing for slower transitions */
+  --transition-fast: 200ms;
+  --transition-normal: 350ms;
+  --transition-slow: 700ms;
+  --easing-ease: ease;
+  --easing-ease-in: ease-in;
+  --easing-ease-out: ease-out;
+  --easing-ease-in-out: ease-in-out;
 }
 
-html, body { height: 100%; }
-body { margin: 0; background: var(--surface-bg); color: var(black); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
-a { color: var(--accent); }
+html, body { 
+  height: 100%; 
+}
+
+body { 
+  margin: 0; 
+  background: var(--surface-bg); 
+  color: var(--text-main); 
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+a { 
+  color: var(--accent); 
+}
+
+/* Responsive helpers */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.row { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 16px;
+}
+
+.col { 
+  flex: 1 1 0;
+}
+
+/* Global modal styles (custom popup) */
+.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 7000;
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-slow) var(--easing-ease);
+}
+
+.app-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.app-modal {
+  background: var(--surface-card);
+  min-width: 380px;
+  max-width: 800px;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.2);
+  transform: translateY(12px);
+  transition: transform var(--transition-slow) var(--easing-ease-out),
+              opacity var(--transition-normal) var(--easing-ease);
+  opacity: 0;
+}
+
+.app-modal-overlay.open .app-modal {
+  transform: none;
+  opacity: 1;
+}
+
+.app-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.app-modal .modal-body {
+  padding: 12px 0;
+  color: var(--text-main);
+}
+
+.app-modal .modal-body input {
+  margin-top: 4px;
+}
+
+.app-modal .modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--surface-muted);
+}
+
+/* Enhanced input field styles */
+.app-modal input[type="text"],
+.app-modal input[type="email"],
+.app-modal input[type="file"],
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--surface-muted);
+  border-radius: 8px;
+  background: var(--surface-bg);
+  color: var(--text-main);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all var(--transition-normal) var(--easing-ease);
+}
+
+.app-modal input[type="text"]:focus,
+.app-modal input[type="email"]:focus,
+.app-modal input[type="file"]:focus,
+.field input:focus {
+  outline: none;
+  border-color: var(--pill-accent);
+  background: var(--surface-card);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+}
+
+/* File input button style */
+.app-modal input[type="file"]::file-selector-button {
+  background: var(--pill-accent);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  margin-right: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all var(--transition-normal) var(--easing-ease);
+}
+
+.app-modal input[type="file"]::file-selector-button:hover {
+  background: var(--accent-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 45, 18, 0.3);
+}
+
+/* Field label styles */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+/* Global animation helpers */
+.fade-in {
+  animation: fadeIn var(--transition-slow) var(--easing-ease);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.slide-in-down {
+  animation: slideInDown var(--transition-slow) var(--easing-ease-out);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-up {
+  animation: slideInUp var(--transition-slow) var(--easing-ease-out);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-out {
+  animation: fadeOut var(--transition-normal) var(--easing-ease);
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+  transition: all var(--transition-normal) var(--easing-ease-in-out);
+}
+
+/* Reusable wave background for auth pages */
+.wave-surface {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--surface-bg) 0%, var(--surface-card) 100%);
+}
+.wave-surface::before,
+.wave-surface::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Top subtle wave */
+.wave-surface::before {
+  top: 0;
+  height: 36vh;
+  background:
+    radial-gradient(120% 90% at 60% -10%, rgba(234, 88, 12, 0.22) 0 60%, transparent 61%) no-repeat,
+    radial-gradient(70% 60% at 10% 10%, rgba(245, 158, 11, 0.18) 0 60%, transparent 61%) no-repeat;
+}
+/* Bottom stronger wave */
+.wave-surface::after {
+  bottom: -1px;
+  height: 44vh;
+  background:
+    radial-gradient(120% 90% at 40% 110%, rgba(249, 115, 22, 0.3) 0 60%, transparent 61%) no-repeat,
+    radial-gradient(60% 50% at 90% 90%, rgba(234, 88, 12, 0.22) 0 60%, transparent 61%) no-repeat;
+}
+
+/* Better text selection contrast */
+::selection { background: var(--accent); color: var(--surface-card); }
+::-moz-selection { background: var(--accent); color: var(--surface-card); }
+
+/* Ensure dropdowns and overlay panels render above other UI elements */
+.menu-panel,
+.dropdown-menu,
+.dropdown,
+.select-panel,
+.p-dropdown-panel,
+.p-overlaypanel,
+.cdk-overlay-pane,
+.app-dropdown-panel,
+[role="listbox"],
+[aria-haspopup="listbox"] {
+  position: absolute !important;
+  z-index: 3000 !important;
+  will-change: transform;
+}
+
+/* For select-like native elements show the dropdown above overlays */
+select {
+  position: relative;
+  z-index: 3000;
+}

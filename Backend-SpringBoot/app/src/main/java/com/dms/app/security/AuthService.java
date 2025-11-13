@@ -86,6 +86,8 @@ public class AuthService {
         // Create folder for the new person
         String basePath = "E:\\06_Java\\Fullstack-dms\\Backend-SpringBoot\\UsersUploads";
         String folderName = person.getNationalId() + "_root";
+
+        // to do call the storage manager
         File folder = new File(basePath, folderName);
         boolean created = folder.mkdirs();
 

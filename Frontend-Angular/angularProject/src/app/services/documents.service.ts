@@ -95,9 +95,15 @@ export class DocumentsService {
     return this.http.post<DocumentItem>(`${this.base}/upload/${folderId}`, form);
   }
 
-  // PUT /api/files/{fileId}
+  // PUT /api/files/{fileId} (legacy full update)
   updateDocument(fileId: string, file: Partial<DocumentItem>): Observable<DocumentItem> {
     return this.http.put<DocumentItem>(`${this.base}/${fileId}`, file);
+  }
+
+  // PUT /api/files/{fileId}/newName - rename endpoint (backend expects newName as request param)
+  renameDocument(fileId: string, newName: string): Observable<DocumentItem> {
+    let params = new HttpParams().set('newName', newName);
+    return this.http.put<DocumentItem>(`${this.base}/${fileId}`, {}, { params });
   }
 
   // DELETE /api/files/{fileId} (soft delete)

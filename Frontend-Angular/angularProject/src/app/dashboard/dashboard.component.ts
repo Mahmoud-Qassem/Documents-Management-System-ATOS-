@@ -1,21 +1,46 @@
-import { Component, HostListener, OnInit, signal, WritableSignal } from '@angular/core';
+import { Component, HostListener, OnInit, signal, WritableSignal, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FoldersService, Folder } from '../services/folders.service';
 import { DocumentsService, DocumentItem, PageResponse, SortDir, SortField } from '../services/documents.service';
 import { DocumentSizePipe } from '../pipes/file-size.pipe';
+import { ModalComponent } from '../shared/modal/modal.component';
 
 interface Crumb { id: string | null; name: string; }
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DocumentSizePipe],
+  imports: [CommonModule, FormsModule, DocumentSizePipe, ModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit {
+  @ViewChild('renameFolderInput') renameFolderInput?: ElementRef;
+  @ViewChild('createFolderInput') createFolderInput?: ElementRef;
+  @ViewChild('renameDocInput') renameDocInput?: ElementRef;
+  @ViewChild('shareEmailInput') shareEmailInput?: ElementRef;
+  // View mode
+  viewMode = signal<'grid'|'list'>('grid');
+  folderViewMode = signal<'grid'|'list'>('grid');
+  docsFilterOpen = signal(false);
+
+  // Themed modal states
+  renameFolderTarget: WritableSignal<Folder | null> = signal(null);
+  renameName = signal('');
+  confirmDelete: WritableSignal<{ type: 'folder'|'document'; id: string; name: string } | null> = signal(null);
+  shareTarget: WritableSignal<{ type: 'folder'|'document'; id: string; name: string } | null> = signal(null);
+  shareEmail = signal('');
+
+  // Custom dialogs
+  createFolderOpen = signal(false);
+  createFolderName = signal('');
+  renameDocTarget: WritableSignal<DocumentItem | null> = signal(null);
+  renameDocName = signal('');
+  uploadDialogOpen = signal(false);
+  uploadFile: WritableSignal<File | null> = signal(null);
+
   // States
   pathStack: WritableSignal<Crumb[]> = signal([{ id: null, name: 'My Drive' }]);
   folders: WritableSignal<Folder[] | null> = signal(null);
@@ -67,8 +92,51 @@ export class DashboardComponent implements OnInit {
     private foldersApi: FoldersService,
     private docsApi: DocumentsService,
     private route: ActivatedRoute,
-    private router: Router
-  ) { }
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {
+    // Auto-focus rename folder input when modal opens
+    effect(() => {
+      if (this.renameFolderTarget()) {
+        setTimeout(() => {
+          this.renameFolderInput?.nativeElement?.focus();
+          this.renameFolderInput?.nativeElement?.select?.();
+        }, 100);
+      }
+    });
+
+    // Auto-focus create folder input when modal opens
+    effect(() => {
+      if (this.createFolderOpen()) {
+        setTimeout(() => {
+          this.createFolderInput?.nativeElement?.focus();
+        }, 100);
+      }
+    });
+
+    // Auto-focus rename doc input when modal opens
+    effect(() => {
+      if (this.renameDocTarget()) {
+        setTimeout(() => {
+          this.renameDocInput?.nativeElement?.focus();
+          this.renameDocInput?.nativeElement?.select?.();
+        }, 100);
+      }
+    });
+
+    // Auto-focus share email input when modal opens
+    effect(() => {
+      if (this.shareTarget()) {
+        setTimeout(() => {
+          this.shareEmailInput?.nativeElement?.focus();
+        }, 100);
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.cdr.detectChanges();
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async (params) => {
@@ -123,10 +191,12 @@ export class DashboardComponent implements OnInit {
     const target = event.target as HTMLElement | null;
     if (!target) return;
     const withinMenu = target.closest('.menu-panel, .item-menu');
+    const withinFilter = target.closest('.search-field, .filter-panel, .search-filter');
     if (!withinMenu) {
       if (this.openMenuForId()) this.closeMenu();
       if (this.openDocMenuForId()) this.closeDocMenu();
     }
+    if (!withinFilter && this.docsFilterOpen()) this.docsFilterOpen.set(false);
   }
 
   loadActiveArea() {
@@ -164,24 +234,36 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  triggerUpload(input: HTMLInputElement) {
+  // Upload dialog helpers
+  openUploadDialog() {
     if (this.currentCrumb.id === null) return;
-    input.value = '';
-    input.click();
+    this.uploadFile.set(null);
+    this.uploadDialogOpen.set(true);
   }
 
-  onDocumentSelected(event: Event) {
+  closeUploadDialog() {
+    this.uploadDialogOpen.set(false);
+    this.uploadFile.set(null);
+  }
+
+  onUploadFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files[0];
-    if (!file || this.currentCrumb.id === null) return;
+    this.uploadFile.set(file || null);
+  }
 
+  confirmUpload() {
+    const file = this.uploadFile();
+    if (!file || this.currentCrumb.id === null) { this.closeUploadDialog(); return; }
     this.loadingDocs.set(true);
     this.docsApi.uploadDocument(this.currentCrumb.id, file).subscribe({
       next: () => {
+        this.closeUploadDialog();
         this.fetchDocuments(this.currentCrumb.id!);
       },
       error: () => {
         this.loadingDocs.set(false);
+        this.closeUploadDialog();
       }
     });
   }
@@ -309,42 +391,28 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteFolder(folder: Folder) {
-    this.foldersApi.deleteFolder(folder.id).subscribe({
-      next: () => {
-        this.closeMenu();
-        this.loadActiveArea();
-      },
-      error: () => this.closeMenu()
-    });
+    this.confirmDelete.set({ type: 'folder', id: folder.id, name: folder.name });
   }
 
   updateFolder(folder: Folder) {
-    const newName = window.prompt('Enter new folder name:', folder.name);
-    if (!newName || newName.trim() === folder.name) return;
-
-    const updatedData = { name: newName.trim() };
-    this.foldersApi.updateFolder(folder.id, updatedData).subscribe({
-      next: () => {
-        this.openMenuForId.set(null);
-        this.loadActiveArea();
-      },
-      error: (err) => {
-        console.error('Failed to rename folder:', err);
-        this.openMenuForId.set(null);
-      },
-    });
+    this.renameFolderTarget.set(folder);
+    this.renameName.set(folder.name);
+    this.closeMenu();
   }
 
-  addFolder() {
-    const name = window.prompt('Folder name:');
-    if (!name) return;
+  openCreateFolderDialog() {
+    this.createFolderName.set('');
+    this.createFolderOpen.set(true);
+  }
 
+  submitCreateFolder() {
+    const value = this.createFolderName().trim();
+    if (!value) { this.createFolderOpen.set(false); return; }
     const parentId = this.currentCrumb.id;
     const path = this.buildPath();
-
-    this.foldersApi.createFolder(name.trim(), parentId, path).subscribe({
-      next: () => this.loadActiveArea(),
-      error: () => { }
+    this.foldersApi.createFolder(value, parentId, path).subscribe({
+      next: () => { this.createFolderOpen.set(false); this.loadActiveArea(); },
+      error: () => { this.createFolderOpen.set(false); }
     });
   }
 
@@ -516,14 +584,26 @@ export class DashboardComponent implements OnInit {
     this.closeDocMenu();
   }
 
-  deleteDocument(doc: DocumentItem) {
-    this.docsApi.deleteDocument(doc.id).subscribe({
-      next: () => {
-        this.closeDocMenu();
-        if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
-      },
-      error: () => this.closeDocMenu()
+  openRenameDocument(doc: DocumentItem) {
+    const base = (doc.name || doc.title || doc.fileName || '').replace(/\.[^/.]+$/, '');
+    this.renameDocTarget.set(doc);
+    this.renameDocName.set(base || (doc.name || ''));
+    this.closeDocMenu();
+  }
+
+  submitRenameDocument() {
+    const target = this.renameDocTarget();
+    const value = this.renameDocName().trim();
+    if (!target) return;
+    if (!value) { this.renameDocTarget.set(null); return; }
+    this.docsApi.renameDocument(target.id, value).subscribe({
+      next: () => { this.renameDocTarget.set(null); if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id); },
+      error: () => { this.renameDocTarget.set(null); }
     });
+  }
+
+  deleteDocument(doc: DocumentItem) {
+    this.confirmDelete.set({ type: 'document', id: doc.id, name: this.docDisplayName(doc) });
   }
 
   restoreDocument(doc: DocumentItem) {
@@ -555,5 +635,91 @@ export class DashboardComponent implements OnInit {
       },
       error: () => { }
     });
+  }
+
+  setView(mode: 'grid'|'list') {
+    this.viewMode.set(mode);
+  }
+
+  setFolderView(mode: 'grid'|'list') { this.folderViewMode.set(mode); }
+
+  toggleDocsFilter() { this.docsFilterOpen.update(v => !v); }
+
+  toggleSort(field: SortField) {
+    const q = this.docsQuery();
+    const dir: SortDir = q.sort === field ? (q.dir === 'asc' ? 'desc' : 'asc') : 'asc';
+    this.docsQuery.set({ ...q, sort: field, dir, page: 0 });
+    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  }
+
+  submitRename() {
+    const folder = this.renameFolderTarget();
+    const value = this.renameName().trim();
+    if (!folder || !value) { this.renameFolderTarget.set(null); return; }
+    if (value === folder.name) { this.renameFolderTarget.set(null); return; }
+    this.foldersApi.updateFolder(folder.id, { name: value }).subscribe({
+      next: () => { this.renameFolderTarget.set(null); this.loadActiveArea(); },
+      error: () => this.renameFolderTarget.set(null)
+    });
+  }
+
+  confirmDeleteAction() {
+    const data = this.confirmDelete();
+    if (!data) return;
+    if (data.type === 'folder') {
+      this.foldersApi.deleteFolder(data.id).subscribe({
+        next: () => { this.confirmDelete.set(null); this.loadActiveArea(); },
+        error: () => this.confirmDelete.set(null)
+      });
+    } else {
+      this.docsApi.deleteDocument(data.id).subscribe({
+        next: () => { this.confirmDelete.set(null); if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id); },
+        error: () => this.confirmDelete.set(null)
+      });
+    }
+  }
+
+  // Favorites persistence (localStorage)
+  private addFavorite(entry: { kind: 'folder'|'document'; id: string; name: string }) {
+    try {
+      const raw = localStorage.getItem('favorites') || '[]';
+      const list = JSON.parse(raw) as any[];
+      if (!list.find(x => x.kind === entry.kind && x.id === entry.id)) list.push(entry);
+      localStorage.setItem('favorites', JSON.stringify(list));
+    } catch {}
+  }
+
+  addFolderToFavorites(folder: Folder) {
+    this.addFavorite({ kind: 'folder', id: folder.id, name: folder.name });
+    this.closeMenu();
+  }
+
+  addDocumentToFavorites(doc: DocumentItem) {
+    this.addFavorite({ kind: 'document', id: doc.id, name: this.docDisplayName(doc) });
+    this.closeDocMenu();
+  }
+
+  openShareFolder(folder: Folder) {
+    this.shareTarget.set({ type: 'folder', id: folder.id, name: folder.name });
+    this.shareEmail.set('');
+  }
+
+  openShareDocument(doc: DocumentItem) {
+    this.shareTarget.set({ type: 'document', id: doc.id, name: this.docDisplayName(doc) });
+    this.shareEmail.set('');
+  }
+
+  confirmShare() {
+    const t = this.shareTarget();
+    const email = this.shareEmail().trim();
+    if (!t || !email) return;
+    if (!this.isValidEmail(email)) return;
+    console.log('Share', t, 'with', email);
+    this.shareTarget.set(null);
+  }
+
+  isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 }

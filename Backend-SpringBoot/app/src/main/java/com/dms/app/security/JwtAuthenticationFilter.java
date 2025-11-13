@@ -63,6 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             writeJsonError(response, HttpServletResponse.SC_BAD_REQUEST, "Missed access token");
             return;
         }
+
         String jwt = null;
         String email = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

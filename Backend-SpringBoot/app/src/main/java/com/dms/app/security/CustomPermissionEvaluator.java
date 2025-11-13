@@ -64,7 +64,6 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
                 return folderRepository.findById(targetId)
                         .map(file ->
                         {
-                            log.info("delete or update request -> check the ownerId {} and the nationalId {}", file.getOwnerId(), ownerId );
                             return file.getOwnerId().equals(ownerId);
                         })
                         .orElse(false);
