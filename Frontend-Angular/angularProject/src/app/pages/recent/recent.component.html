@@ -1,0 +1,67 @@
+<div class="recent-container">
+  <div class="page-header">
+    <h1 class="page-title">Recent Items</h1>
+    <div class="header-controls">
+      <div class="view-controls">
+        <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="setView('grid')" title="Grid view" aria-label="Grid view">
+          <i class="pi pi-th-large"></i>
+        </button>
+        <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="setView('list')" title="List view" aria-label="List view">
+          <i class="pi pi-list"></i>
+        </button>
+      </div>
+      <button class="clear-btn" *ngIf="recentItems().length > 0" (click)="clearAll()" title="Clear all recent items" aria-label="Clear all recent items">
+        <i class="pi pi-trash"></i>
+        Clear All
+      </button>
+    </div>
+  </div>
+
+  <p class="status-text" *ngIf="loading()">Loading recent items...</p>
+  <p class="error-text" *ngIf="error()">{{ error() }}</p>
+
+  <div class="recent-empty" *ngIf="!loading() && recentItems().length === 0 && !error()">
+    <i class="pi pi-inbox"></i>
+    <p>No recent items yet</p>
+  </div>
+
+  <!-- Grid View -->
+  <div class="recent-grid" *ngIf="!loading() && viewMode() === 'grid' && recentItems().length > 0">
+    <div class="recent-item-card" *ngFor="let item of recentItems()" (click)="openItem(item)">
+      <div class="item-icon" [class.folder-icon]="item.kind === 'folder'">
+        <i class="pi" [ngClass]="getItemIcon(item)"></i>
+      </div>
+      <div class="item-info">
+        <div class="item-name" [title]="getItemDisplayName(item)">{{ getItemDisplayName(item) }}</div>
+        <div class="item-meta">{{ item.kind === 'folder' ? 'Folder' : (item.type || 'File') }}</div>
+        <div class="item-visited">{{ item.visitedAt | date: 'short' }}</div>
+      </div>
+      <button class="item-download" (click)="$event.stopPropagation(); downloadItem(item)" title="Download">
+        <i class="pi pi-download"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div class="recent-list" *ngIf="!loading() && viewMode() === 'list' && recentItems().length > 0">
+    <div class="list-header">
+      <div class="list-col name">Name</div>
+      <div class="list-col type">Type</div>
+      <div class="list-col visited">Visited</div>
+      <div class="list-col actions">Actions</div>
+    </div>
+    <div class="list-row" *ngFor="let item of recentItems()" (click)="openItem(item)">
+      <div class="list-col name">
+        <i class="pi" [ngClass]="getItemIcon(item)"></i>
+        {{ getItemDisplayName(item) }}
+      </div>
+      <div class="list-col type">{{ item.kind === 'folder' ? 'Folder' : (item.type || 'File') }}</div>
+      <div class="list-col visited">{{ item.visitedAt | date: 'short' }}</div>
+      <div class="list-col actions" (click)="$event.stopPropagation()">
+        <button class="action-btn" (click)="downloadItem(item)" title="Download">
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

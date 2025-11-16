@@ -2,10 +2,14 @@ import { Component, HostListener, OnInit, signal, WritableSignal, ViewChild, Ele
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FoldersService, Folder } from '../services/folders.service';
+import { FoldersService, Folder, SearchCriteria } from '../services/folders.service';
 import { DocumentsService, DocumentItem, PageResponse, SortDir, SortField } from '../services/documents.service';
 import { DocumentSizePipe } from '../pipes/file-size.pipe';
 import { ModalComponent } from '../shared/modal/modal.component';
+import { RecentService } from '../services/recent.service';
+import { DownloadsService } from '../services/downloads.service';
+import { FavoritesService } from '../services/favorites.service';
+import { FileShareService, SharePermission } from '../services/file-share.service';
 
 interface Crumb { id: string | null; name: string; }
 
@@ -24,14 +28,37 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   // View mode
   viewMode = signal<'grid'|'list'>('grid');
   folderViewMode = signal<'grid'|'list'>('grid');
+  binViewMode = signal<'grid'|'list'>('grid');
   docsFilterOpen = signal(false);
+  binFilterOpen = signal(false);
+
+  // Global search state
+  globalSearchQuery = signal('');
+  globalSearchBy = signal<'name'|'type'>('name');
+  globalFilterOpen = signal(false);
+
+  // Menu bar states
+  addNewOpen = signal(false);
+  viewMenuOpen = signal(false);
+  sortMenuOpen = signal(false);
+  pageSizeMenuOpen = signal(false);
+  customPageSizeInput = signal('');
+
+  // Folder sort state (used for loading all folders)
+  folderSortField = signal<SortField>('name');
+  folderSortDir = signal<SortDir>('asc');
+
+  // Preset page sizes
+  pagePresets = [2, 4, 8, 16, 32, 64];
 
   // Themed modal states
   renameFolderTarget: WritableSignal<Folder | null> = signal(null);
   renameName = signal('');
   confirmDelete: WritableSignal<{ type: 'folder'|'document'; id: string; name: string } | null> = signal(null);
+  confirmPermanentDelete: WritableSignal<{ type: 'folder'|'document'; id: string; name: string } | null> = signal(null);
   shareTarget: WritableSignal<{ type: 'folder'|'document'; id: string; name: string } | null> = signal(null);
   shareEmail = signal('');
+  sharePermission = signal<SharePermission>('READ');
 
   // Custom dialogs
   createFolderOpen = signal(false);
@@ -40,6 +67,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   renameDocName = signal('');
   uploadDialogOpen = signal(false);
   uploadFile: WritableSignal<File | null> = signal(null);
+  uploadProgress = signal(0);
+  uploading = signal(false);
 
   // States
   pathStack: WritableSignal<Crumb[]> = signal([{ id: null, name: 'My Drive' }]);
@@ -51,8 +80,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   loadingDocs = signal(false);
   docsError = signal<string | null>(null);
 
-  // Documents pagination/sort/search state
-  docsQuery = signal<{ keyword: string; searchBy: 'name'|'type'; sort: SortField; dir: SortDir; page: number; size: number }>({
+  // Combined pagination/sort/search state (folders + files)
+  combinedQuery = signal<{ keyword: string; searchBy: 'name'|'type'; sort: SortField; dir: SortDir; page: number; size: number }>({
     keyword: '',
     searchBy: 'name',
     sort: 'name',
@@ -60,7 +89,14 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     page: 0,
     size: 10
   });
-  docsPage: WritableSignal<PageResponse<DocumentItem> | null> = signal(null);
+
+  // All folders and documents data (for combined pagination)
+  allFolders: WritableSignal<Folder[]> = signal([]);
+  allDocuments: WritableSignal<DocumentItem[]> = signal([]);
+  combinedItems: WritableSignal<(Folder | DocumentItem)[]> = signal([]);
+  totalCombinedPages = signal(0);
+  loadingCombined = signal(false);
+  combinedError = signal<string | null>(null);
 
   openMenuForId: WritableSignal<string | null> = signal(null);
   showDetailsFor: WritableSignal<Folder | null> = signal(null);
@@ -93,7 +129,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private docsApi: DocumentsService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private recentService: RecentService,
+    private downloadsService: DownloadsService,
+    private favoritesService: FavoritesService,
+    private shareService: FileShareService
   ) {
     // Auto-focus rename folder input when modal opens
     effect(() => {
@@ -163,17 +203,19 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       } else {
         this.foldersApi.getFolderById(folderId).subscribe({
           next: (f) => {
-            this.pathStack.update((currentPath) => [
-              ...currentPath,
-              { id: f.id, name: f.name }
-            ]);
+            const currentPath = this.pathStack();
+            const lastCrumb = currentPath[currentPath.length - 1];
+            if (lastCrumb.id !== f.id) {
+              this.pathStack.update((cp) => [...cp, { id: f.id, name: f.name }]);
+            }
             this.loadActiveArea();
           },
           error: () => {
-            this.pathStack.update((currentPath) => [
-              ...currentPath,
-              { id: folderId, name: 'Folder' }
-            ]);
+            const currentPath = this.pathStack();
+            const lastCrumb = currentPath[currentPath.length - 1];
+            if (lastCrumb.id !== folderId) {
+              this.pathStack.update((cp) => [...cp, { id: folderId, name: 'Folder' }]);
+            }
             this.loadActiveArea();
           }
         });
@@ -184,6 +226,22 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   get currentCrumb(): Crumb {
     const stack = this.pathStack();
     return stack[stack.length - 1];
+  }
+
+  isFolder(item: any): item is Folder {
+    return item && !item.type && 'ownerName' in item;
+  }
+
+  isDocument(item: any): item is DocumentItem {
+    return item && 'type' in item;
+  }
+
+  isFolderFavorited(folder: Folder): boolean {
+    return this.favoritesService.isFavorite(folder.id, 'folder');
+  }
+
+  isDocumentFavorited(doc: DocumentItem): boolean {
+    return this.favoritesService.isFavorite(doc.id, 'document');
   }
 
   @HostListener('document:click', ['$event'])
@@ -206,32 +264,109 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     }
 
     const current = this.currentCrumb;
-    this.fetchFolders(current.id);
-    if (current.id !== null) this.fetchDocuments(current.id);
-    else {
-      this.files.set([]);
-      this.docsPage.set({ content: [], totalPages: 0, totalElements: 0, size: this.docsQuery().size, number: 0 });
-      this.loadingDocs.set(false);
-      this.docsError.set(null);
-    }
+    this.loadCombinedItems(current.id);
   }
 
-  fetchFolders(parentId: string | null) {
-    this.loadingFolders.set(true);
-    this.foldersError.set(null);
+  loadCombinedItems(parentId: string | null) {
+    this.loadingCombined.set(true);
+    this.combinedError.set(null);
+    this.folders.set([]);
+    this.files.set([]);
 
-    this.foldersApi.getFoldersByParentId(parentId).subscribe({
-      next: (list) => {
-        this.folders.set(list);
-        this.loadingFolders.set(false);
+    // Fetch all folders with search filtering
+    const folderSearchCriteria: SearchCriteria = {
+      folderId: parentId || 'root',
+      deleted: false,
+      page: 0,
+      size: 1000,
+      sort: this.combinedQuery().sort,
+      dir: this.combinedQuery().dir
+    };
+
+    // Apply search keyword to folders if searching by name
+    const q = this.combinedQuery();
+    if (q.keyword && q.searchBy === 'name') {
+      folderSearchCriteria.name = q.keyword;
+    }
+
+    let foldersLoaded = false;
+    let docsLoaded = false;
+
+    this.foldersApi.searchFolders(folderSearchCriteria).subscribe({
+      next: (page) => {
+        this.allFolders.set(page.content || []);
+        foldersLoaded = true;
+        if (docsLoaded) this.processCombinedItems();
       },
       error: (err) => {
         console.error('Error loading folders:', err);
-        this.foldersError.set('Failed to load folders');
-        this.loadingFolders.set(false);
-        this.folders.set([]);
+        this.allFolders.set([]);
+        foldersLoaded = true;
+        if (docsLoaded) this.processCombinedItems();
       },
     });
+
+    // Fetch all documents (only if not in root)
+    if (parentId !== null) {
+      const docsParams: any = {
+        folderId: parentId,
+        deleted: false,
+        page: 0,
+        size: 1000,
+        sort: this.combinedQuery().sort,
+        dir: this.combinedQuery().dir
+      };
+      const q = this.combinedQuery();
+      if (q.keyword) {
+        if (q.searchBy === 'name') docsParams.name = q.keyword;
+        else if (q.searchBy === 'type') docsParams.type = q.keyword;
+      }
+
+      this.docsApi.searchDocuments(docsParams).subscribe({
+        next: (page) => {
+          this.allDocuments.set(page?.content || []);
+          docsLoaded = true;
+          if (foldersLoaded) this.processCombinedItems();
+        },
+        error: () => {
+          this.allDocuments.set([]);
+          docsLoaded = true;
+          if (foldersLoaded) this.processCombinedItems();
+        }
+      });
+    } else {
+      docsLoaded = true;
+      this.allDocuments.set([]);
+      if (foldersLoaded) this.processCombinedItems();
+    }
+  }
+
+  private processCombinedItems() {
+    const folders = this.allFolders();
+    const docs = this.allDocuments();
+    const combined = [...folders, ...docs];
+    const q = this.combinedQuery();
+    const pageSize = q.size;
+    const pageNum = q.page;
+
+    // Calculate total pages based on combined list
+    const totalPages = Math.ceil(combined.length / pageSize) || 1;
+    this.totalCombinedPages.set(totalPages);
+
+    // Get items for current page
+    const startIdx = pageNum * pageSize;
+    const endIdx = startIdx + pageSize;
+    const pageItems = combined.slice(startIdx, endIdx);
+
+    this.combinedItems.set(pageItems);
+
+    // Update folders and files signals separately for template binding
+    this.folders.set(pageItems.filter(item => this.isFolder(item)) as Folder[]);
+    this.files.set(pageItems.filter(item => this.isDocument(item)) as DocumentItem[]);
+
+    this.loadingCombined.set(false);
+    this.loadingFolders.set(false);
+    this.loadingDocs.set(false);
   }
 
   // Upload dialog helpers
@@ -255,93 +390,87 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   confirmUpload() {
     const file = this.uploadFile();
     if (!file || this.currentCrumb.id === null) { this.closeUploadDialog(); return; }
-    this.loadingDocs.set(true);
-    this.docsApi.uploadDocument(this.currentCrumb.id, file).subscribe({
-      next: () => {
-        this.closeUploadDialog();
-        this.fetchDocuments(this.currentCrumb.id!);
+    this.uploading.set(true);
+    this.uploadProgress.set(0);
+    this.docsApi.uploadDocumentWithProgress(this.currentCrumb.id, file).subscribe({
+      next: (event) => {
+        if (typeof event === 'number') {
+          this.uploadProgress.set(event);
+        } else if (event.type === 4) {
+          this.closeUploadDialog();
+          this.loadCombinedItems(this.currentCrumb.id!);
+          this.uploading.set(false);
+          this.uploadProgress.set(0);
+        }
       },
       error: () => {
-        this.loadingDocs.set(false);
+        this.uploading.set(false);
+        this.uploadProgress.set(0);
         this.closeUploadDialog();
       }
     });
   }
 
-  fetchDocuments(folderId: string) {
-    this.loadingDocs.set(true);
-    this.docsError.set(null);
-    const q = this.docsQuery();
-    const params: any = { folderId, deleted: false, page: q.page, size: q.size, sort: q.sort, dir: q.dir };
-    if (q.keyword) {
-      if (q.searchBy === 'name') params.name = q.keyword;
-      else if (q.searchBy === 'type') params.type = q.keyword;
-    }
 
-    this.docsApi.searchDocuments(params).subscribe({
-      next: (page) => {
-        this.docsPage.set(page);
-        this.files.set(page?.content || []);
-        this.loadingDocs.set(false);
-      },
-      error: () => {
-        this.docsError.set('Failed to load files');
-        this.loadingDocs.set(false);
-      }
-    });
-  }
 
   listPages(total: number): number[] {
     const n = Math.max(0, total || 0);
     return Array.from({ length: n }, (_, i) => i);
   }
 
-  onDocsSearch() {
-    this.docsQuery.update((s) => ({ ...s, page: 0 }));
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  onCombinedSearch() {
+    this.combinedQuery.update((s) => ({ ...s, page: 0 }));
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
-  onDocsKeywordChange(value: string) {
-    this.docsQuery.update((s) => ({ ...s, keyword: value }));
+  onCombinedKeywordChange(value: string) {
+    this.combinedQuery.update((s) => ({ ...s, keyword: value }));
   }
 
-  onDocsSearchByChange(value: 'name'|'type') {
-    this.docsQuery.update((s) => ({ ...s, searchBy: value }));
+  onCombinedSearchByChange(value: 'name'|'type') {
+    this.combinedQuery.update((s) => ({ ...s, searchBy: value }));
   }
 
-  clearDocsSearch() {
-    this.docsQuery.update((s) => ({ ...s, keyword: '', page: 0 }));
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  clearCombinedSearch() {
+    this.combinedQuery.update((s) => ({ ...s, keyword: '', page: 0 }));
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
-  onDocsSortChange(field: SortField) {
-    this.docsQuery.update((s) => ({ ...s, sort: field, page: 0 }));
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  onCombinedSortChange(field: SortField) {
+    this.combinedQuery.update((s) => ({ ...s, sort: field, page: 0 }));
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
-  onDocsDirChange(dir: SortDir) {
-    this.docsQuery.update((s) => ({ ...s, dir, page: 0 }));
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  onCombinedDirChange(dir: SortDir) {
+    this.combinedQuery.update((s) => ({ ...s, dir, page: 0 }));
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
-  onDocsSizeChange(size: number) {
-    this.docsQuery.update((s) => ({ ...s, size, page: 0 }));
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  onCombinedSizeChange(size: number) {
+    this.combinedQuery.update((s) => ({ ...s, size, page: 0 }));
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
-  goToDocsPage(idx: number) {
-    this.docsQuery.update((s) => ({ ...s, page: idx }));
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+  goToCombinedPage(idx: number) {
+    this.combinedQuery.update((s) => ({ ...s, page: idx }));
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
   openFolder(folder: Folder) {
     if (this.inRecycleBin()) return;
+    this.recentService.addVisit({
+      id: folder.id,
+      name: folder.name,
+      kind: 'folder',
+      size: folder.size
+    });
     this.router.navigate(['/dashboard', folder.id]);
   }
 
   navigateToCrumb(index: number) {
     const stack = this.pathStack();
     const target = stack[index];
+    this.pathStack.set(stack.slice(0, index + 1));
     this.inRecycleBin.set(false);
     if (!target.id) this.router.navigate(['/dashboard']);
     else this.router.navigate(['/dashboard', target.id]);
@@ -363,12 +492,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     }
   }
 
-  @HostListener('document:click')
-  closeAllMenus() {
-    this.openRecycleBinMenuId.set(null);
-    this.openMenuForId.set(null);
-    this.openDocMenuForId.set(null);
-  }
+
 
   closeMenu() {
     this.openMenuForId.set(null);
@@ -439,8 +563,17 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
     const ownerId = payload?.nationalId || payload?.sub || 'unknown';
 
-    this.foldersApi.getDeletedFolders(ownerId).subscribe({
-      next: (folders) => this.deletedFolders.set(folders || []),
+    const deletedFoldersCriteria: SearchCriteria = {
+      deleted: true,
+      folderId: 'root',
+      page: 0,
+      size: this.combinedQuery().size,
+      sort: this.folderSortField(),
+      dir: this.folderSortDir()
+    };
+
+    this.foldersApi.searchFolders(deletedFoldersCriteria).subscribe({
+      next: (page) => this.deletedFolders.set(page.content || []),
       error: () => this.deletedError.set('Could not load deleted folders'),
     });
 
@@ -567,11 +700,34 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   }
 
   hardDeleteFolder(folder: Folder) {
-    if (!window.confirm(`Permanently delete "${folder.name}"?`)) return;
-    this.foldersApi.deleteFolderHard(folder.id).subscribe({
-      next: () => this.loadDeletedItems(),
-      error: () => { }
+    this.confirmPermanentDelete.set({
+      type: 'folder',
+      id: folder.id,
+      name: folder.name
     });
+  }
+
+  confirmPermanentDeleteAction() {
+    const target = this.confirmPermanentDelete();
+    if (!target) return;
+
+    if (target.type === 'folder') {
+      this.foldersApi.deleteFolderHard(target.id).subscribe({
+        next: () => {
+          this.loadDeletedItems();
+          this.confirmPermanentDelete.set(null);
+        },
+        error: () => { }
+      });
+    } else {
+      this.docsApi.deleteDocumentHard(target.id).subscribe({
+        next: () => {
+          this.loadDeletedItems();
+          this.confirmPermanentDelete.set(null);
+        },
+        error: () => { }
+      });
+    }
   }
 
   // Document actions
@@ -597,7 +753,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     if (!target) return;
     if (!value) { this.renameDocTarget.set(null); return; }
     this.docsApi.renameDocument(target.id, value).subscribe({
-      next: () => { this.renameDocTarget.set(null); if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id); },
+      next: () => { this.renameDocTarget.set(null); this.loadCombinedItems(this.currentCrumb.id); },
       error: () => { this.renameDocTarget.set(null); }
     });
   }
@@ -614,10 +770,10 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   }
 
   hardDeleteDocument(doc: DocumentItem) {
-    if (!window.confirm(`Permanently delete "${this.docDisplayName(doc)}"?`)) return;
-    this.docsApi.deleteDocumentHard(doc.id).subscribe({
-      next: () => this.loadDeletedItems(),
-      error: () => { },
+    this.confirmPermanentDelete.set({
+      type: 'document',
+      id: doc.id,
+      name: this.docDisplayName(doc)
     });
   }
 
@@ -632,9 +788,23 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
+        this.downloadsService.trackDownload({
+          id: doc.id,
+          name: this.docDisplayName(doc),
+          size: doc.size,
+          type: doc.type
+        });
       },
       error: () => { }
     });
+    this.closeDocMenu();
+  }
+
+  previewDocument(doc: DocumentItem) {
+    this.router.navigate(['/preview', doc.id], {
+      state: { folderId: this.currentCrumb.id }
+    });
+    this.closeDocMenu();
   }
 
   setView(mode: 'grid'|'list') {
@@ -643,13 +813,19 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   setFolderView(mode: 'grid'|'list') { this.folderViewMode.set(mode); }
 
+  setBinView(mode: 'grid'|'list') { this.binViewMode.set(mode); }
+
+  toggleBinFilter() {
+    this.binFilterOpen.update((v) => !v);
+  }
+
   toggleDocsFilter() { this.docsFilterOpen.update(v => !v); }
 
   toggleSort(field: SortField) {
-    const q = this.docsQuery();
+    const q = this.combinedQuery();
     const dir: SortDir = q.sort === field ? (q.dir === 'asc' ? 'desc' : 'asc') : 'asc';
-    this.docsQuery.set({ ...q, sort: field, dir, page: 0 });
-    if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id);
+    this.combinedQuery.set({ ...q, sort: field, dir, page: 0 });
+    this.loadCombinedItems(this.currentCrumb.id);
   }
 
   submitRename() {
@@ -673,40 +849,41 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       });
     } else {
       this.docsApi.deleteDocument(data.id).subscribe({
-        next: () => { this.confirmDelete.set(null); if (this.currentCrumb.id) this.fetchDocuments(this.currentCrumb.id); },
+        next: () => { this.confirmDelete.set(null); this.loadCombinedItems(this.currentCrumb.id); },
         error: () => this.confirmDelete.set(null)
       });
     }
   }
 
-  // Favorites persistence (localStorage)
-  private addFavorite(entry: { kind: 'folder'|'document'; id: string; name: string }) {
-    try {
-      const raw = localStorage.getItem('favorites') || '[]';
-      const list = JSON.parse(raw) as any[];
-      if (!list.find(x => x.kind === entry.kind && x.id === entry.id)) list.push(entry);
-      localStorage.setItem('favorites', JSON.stringify(list));
-    } catch {}
-  }
-
-  addFolderToFavorites(folder: Folder) {
-    this.addFavorite({ kind: 'folder', id: folder.id, name: folder.name });
+  // Favorites using service
+  toggleFolderFavorite(folder: Folder) {
+    if (this.isFolderFavorited(folder)) {
+      this.favoritesService.removeFavorite(folder.id, 'folder');
+    } else {
+      this.favoritesService.addFavorite({ kind: 'folder', id: folder.id, name: folder.name });
+    }
     this.closeMenu();
   }
 
-  addDocumentToFavorites(doc: DocumentItem) {
-    this.addFavorite({ kind: 'document', id: doc.id, name: this.docDisplayName(doc) });
+  toggleDocumentFavorite(doc: DocumentItem) {
+    if (this.isDocumentFavorited(doc)) {
+      this.favoritesService.removeFavorite(doc.id, 'document');
+    } else {
+      this.favoritesService.addFavorite({ kind: 'document', id: doc.id, name: this.docDisplayName(doc) });
+    }
     this.closeDocMenu();
   }
 
   openShareFolder(folder: Folder) {
     this.shareTarget.set({ type: 'folder', id: folder.id, name: folder.name });
     this.shareEmail.set('');
+    this.sharePermission.set('READ');
   }
 
   openShareDocument(doc: DocumentItem) {
     this.shareTarget.set({ type: 'document', id: doc.id, name: this.docDisplayName(doc) });
     this.shareEmail.set('');
+    this.sharePermission.set('READ');
   }
 
   confirmShare() {
@@ -714,12 +891,170 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     const email = this.shareEmail().trim();
     if (!t || !email) return;
     if (!this.isValidEmail(email)) return;
-    console.log('Share', t, 'with', email);
-    this.shareTarget.set(null);
+
+    this.shareService.shareFile(t.id, {
+      targetUserEmail: email,
+      permission: this.sharePermission()
+    }).subscribe({
+      next: () => {
+        this.shareTarget.set(null);
+        this.shareEmail.set('');
+        this.sharePermission.set('READ');
+      },
+      error: (err) => {
+        console.error('Failed to share file', err);
+        alert('Failed to share file. Please try again.');
+      }
+    });
   }
 
   isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  }
+
+  // Global Search Methods
+  onGlobalSearch() {
+    const q = this.globalSearchQuery().trim();
+    this.combinedQuery.update((s) => ({ ...s, keyword: q, searchBy: this.globalSearchBy(), page: 0 }));
+    this.loadCombinedItems(this.currentCrumb.id);
+  }
+
+  onGlobalSearchChange(value: string) {
+    this.globalSearchQuery.set(value);
+  }
+
+  onGlobalSearchByChange(value: 'name'|'type') {
+    this.globalSearchBy.set(value);
+  }
+
+  clearGlobalSearch() {
+    this.globalSearchQuery.set('');
+    this.globalSearchBy.set('name');
+    this.globalFilterOpen.set(false);
+    this.combinedQuery.update((s) => ({ ...s, keyword: '', page: 0 }));
+    this.loadActiveArea();
+  }
+
+  toggleGlobalFilter() {
+    this.globalFilterOpen.update((v) => !v);
+  }
+
+
+  // Menu Bar Methods
+  toggleAddNew() {
+    this.addNewOpen.update((v) => !v);
+    this.viewMenuOpen.set(false);
+    this.sortMenuOpen.set(false);
+    this.pageSizeMenuOpen.set(false);
+  }
+
+  toggleViewMenu() {
+    this.viewMenuOpen.update((v) => !v);
+    this.addNewOpen.set(false);
+    this.sortMenuOpen.set(false);
+    this.pageSizeMenuOpen.set(false);
+  }
+
+  toggleSortMenu() {
+    this.sortMenuOpen.update((v) => !v);
+    this.addNewOpen.set(false);
+    this.viewMenuOpen.set(false);
+    this.pageSizeMenuOpen.set(false);
+  }
+
+  togglePageSizeMenu() {
+    this.pageSizeMenuOpen.update((v) => !v);
+    this.addNewOpen.set(false);
+    this.viewMenuOpen.set(false);
+    this.sortMenuOpen.set(false);
+  }
+
+  // Unified View/Sort/PageSize Methods (apply to both folders and files)
+  setAllView(mode: 'grid'|'list') {
+    this.viewMode.set(mode);
+    this.folderViewMode.set(mode);
+  }
+
+  getSortField(): SortField {
+    return this.combinedQuery().sort;
+  }
+
+  getSortDir(): SortDir {
+    return this.combinedQuery().dir;
+  }
+
+  getPageSize(): number {
+    return this.combinedQuery().size;
+  }
+
+  onSortChange(field: SortField) {
+    const currentSort = this.combinedQuery().sort;
+    const currentDir = this.combinedQuery().dir;
+
+    if (currentSort === field) {
+      // Toggle direction if same field
+      this.combinedQuery.update((q) => ({ ...q, dir: currentDir === 'asc' ? 'desc' : 'asc', page: 0 }));
+    } else {
+      this.combinedQuery.update((q) => ({ ...q, sort: field, dir: 'asc', page: 0 }));
+    }
+
+    this.folderSortField.set(field);
+    this.folderSortDir.set(currentSort === field ? (currentDir === 'asc' ? 'desc' : 'asc') : 'asc');
+
+    this.loadActiveArea();
+  }
+
+  setSortDir(dir: SortDir) {
+    this.combinedQuery.update((q) => ({ ...q, dir, page: 0 }));
+    this.folderSortDir.set(dir);
+    this.loadActiveArea();
+    // Don't close any menus when changing sort direction
+  }
+
+  setPageSize(size: number) {
+    this.combinedQuery.update((q) => ({ ...q, size, page: 0 }));
+    this.loadActiveArea();
+  }
+
+  setCustomPageSize() {
+    const val = this.customPageSizeInput().trim();
+    if (!val) return;
+    const size = parseInt(val, 10);
+    if (isNaN(size) || size < 1) return;
+    this.customPageSizeInput.set('');
+    this.setPageSize(size);
+    this.pageSizeMenuOpen.set(false);
+  }
+
+
+  @HostListener('document:click')
+  closeAllMenus() {
+    const target = (event as MouseEvent).target as HTMLElement | null;
+    if (!target) return;
+
+    // Check if click is within any toolbar control group or dropdown menu
+    const withinControlGroup = target.closest('.control-group');
+    const withinAddNew = target.closest('.add-new-section');
+    const withinDropdown = target.closest('.dropdown-menu');
+
+    if (!withinControlGroup && !withinAddNew && !withinDropdown) {
+      this.addNewOpen.set(false);
+      this.sortMenuOpen.set(false);
+      this.pageSizeMenuOpen.set(false);
+    }
+
+    if (!target.closest('.search-field, .filter-panel, .search-filter')) {
+      this.globalFilterOpen.set(false);
+    }
+
+    // Close item context menus
+    const withinItemMenu = target.closest('.item-menu, .menu-panel, .folder-menu-btn');
+    if (!withinItemMenu) {
+      this.openMenuForId.set(null);
+      this.openDocMenuForId.set(null);
+    }
+
+    this.openRecycleBinMenuId.set(null);
   }
 }

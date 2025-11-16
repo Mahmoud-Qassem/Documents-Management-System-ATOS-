@@ -5,6 +5,7 @@ import com.dms.app.exception.CanNotCreateFolderException;
 import com.dms.app.exception.CanNotDeleteFolderException;
 import com.dms.app.model.Folder;
 import com.dms.app.model.Person;
+import com.dms.app.model.SearchCriteria;
 import com.dms.app.security.CustomUserDetails;
 import com.dms.app.security.JwtService;
 import com.dms.app.service.FolderService;
@@ -12,6 +13,7 @@ import com.dms.app.service.PersonService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +35,19 @@ public class FolderController {
     public FolderController(FolderService folderService) {
         this.folderService = folderService;
     }
+    ///  api -> localhost:8080/api/folders/search
+    @PostMapping("/search")
+    public ResponseEntity<Page<Folder>> searchFolders(
+            @RequestBody SearchCriteria searchCriteria,
+            Authentication authentication) {
+
+        String nationalId = getNationalId(authentication);
+        Page<Folder> folders = folderService.searchFolders(nationalId, searchCriteria);
+        return ResponseEntity.ok(folders);
+    }
+
+
+
     @PostMapping
     public ResponseEntity<Folder> createFolder(@RequestBody Folder folder, Authentication authentication){
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
@@ -45,16 +60,16 @@ public class FolderController {
 
     @GetMapping("/owner/{ownerId}")
     @PreAuthorize("hasPermission(#ownerId, 'OWNER', 'READ')")
-    public ResponseEntity<List<Folder>> getFoldersByOwnerId(@PathVariable String ownerId, HttpServletRequest request){
-        List<Folder> folders = folderService.getFoldersByOwnerId(ownerId);
+    public ResponseEntity<Page<Folder>> getFoldersByOwnerId(@PathVariable String ownerId, HttpServletRequest request){
+        Page<Folder> folders = folderService.getFoldersByOwnerId(ownerId);
         return ResponseEntity.ok(folders);
     }
 
 
     @GetMapping("/deleted/{ownerId}")
     @PreAuthorize("hasPermission(#ownerId, 'OWNER', 'READ')")
-    public ResponseEntity<List<Folder>> getDeletedFolders(@PathVariable String ownerId, HttpServletRequest request){
-        List<Folder> folders = folderService.getDeletedFolders(ownerId);
+    public ResponseEntity<Page<Folder>> getDeletedFolders(@PathVariable String ownerId, HttpServletRequest request){
+        Page<Folder> folders = folderService.getDeletedFolders(ownerId);
         return ResponseEntity.ok(folders);
     }
 
@@ -69,10 +84,10 @@ public class FolderController {
 
     @GetMapping("/parent/{parentId}")
     @PreAuthorize("hasPermission(#parentId, 'FOLDER', 'READ')")
-    public ResponseEntity<List<Folder>> getFoldersByParentId(@PathVariable String parentId, Authentication authentication) {
+    public ResponseEntity<Page<Folder>> getFoldersByParentId(@PathVariable String parentId, Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String ownerId = userDetails.getNationalId();
-        List<Folder> folders = folderService.getFoldersByParentId( ownerId, parentId);
+        Page<Folder> folders = folderService.getFoldersByParentId( ownerId, parentId);
         return ResponseEntity.ok(folders);
     }
 
@@ -80,11 +95,12 @@ public class FolderController {
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'UPDATE')")
     public ResponseEntity<Folder> restoreFolder(@PathVariable String folderId){
         Folder restoredFolder = folderService.restoreFolder(folderId);
+        folderService.increaseFolderSize(restoredFolder.getParentId(), restoredFolder.getSize());
         return ResponseEntity.ok(restoredFolder);
     }
 
 
-    @PutMapping("/{folderId}")
+    @PostMapping("/{folderId}")
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'UPDATE')")
     public ResponseEntity<Folder> updateFolder(@PathVariable String folderId, @RequestBody Folder folder){
         Folder updatedFolder = folderService.updateFolder(folderId, folder);
@@ -102,7 +118,12 @@ public class FolderController {
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'DELETE')")
     public ResponseEntity<Folder> deleteFolder(@PathVariable String folderId){
         Folder deletedFolder = folderService.deleteFolder(folderId);
+        folderService.decreaseFolderSize(deletedFolder.getParentId(), deletedFolder.getSize());
         return ResponseEntity.ok(deletedFolder);
+    }
+
+    private String getNationalId(Authentication authentication) {
+        return ((CustomUserDetails) authentication.getPrincipal()).getNationalId();
     }
 
 }

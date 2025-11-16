@@ -22,6 +22,7 @@
     "@angular/ssr": "^19.2.18",
     "@primeuix/themes": "^1.2.5",
     "express": "^4.18.2",
+    "pako": "^2.1.0",
     "primeicons": "^7.0.0",
     "primeng": "^19.1.1",
     "rxjs": "~7.8.0",

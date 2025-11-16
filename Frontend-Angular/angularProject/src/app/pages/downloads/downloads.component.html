@@ -1,0 +1,67 @@
+<div class="downloads-container">
+  <div class="page-header">
+    <h1 class="page-title">Downloads</h1>
+    <div class="header-controls">
+      <div class="view-controls">
+        <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="setView('grid')" title="Grid view" aria-label="Grid view">
+          <i class="pi pi-th-large"></i>
+        </button>
+        <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="setView('list')" title="List view" aria-label="List view">
+          <i class="pi pi-list"></i>
+        </button>
+      </div>
+      <button class="clear-btn" (click)="clearDownloads()" *ngIf="downloads().length > 0" title="Clear all downloads">
+        <i class="pi pi-trash"></i>
+        Clear All
+      </button>
+    </div>
+  </div>
+
+  <div class="downloads-empty" *ngIf="downloads().length === 0">
+    <i class="pi pi-inbox"></i>
+    <p>No downloads yet</p>
+  </div>
+
+  <!-- Grid View -->
+  <div class="downloads-grid" *ngIf="viewMode() === 'grid' && downloads().length > 0">
+    <div class="download-item-card" *ngFor="let item of downloads()">
+      <button class="remove-btn" (click)="removeDownload(item)" title="Remove from downloads">
+        <i class="pi pi-times"></i>
+      </button>
+      <div class="item-icon">
+        <i class="pi pi-file"></i>
+      </div>
+      <div class="item-info">
+        <div class="item-name" [title]="item.name">{{ item.name }}</div>
+        <div class="item-size">{{ item.size | documentSize }}</div>
+        <div class="item-type" *ngIf="item.type">{{ item.type }}</div>
+        <div class="item-downloaded">{{ item.downloadedAt | date: 'short' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div class="downloads-list" *ngIf="viewMode() === 'list' && downloads().length > 0">
+    <div class="list-header">
+      <div class="list-col name">Name</div>
+      <div class="list-col type">Type</div>
+      <div class="list-col size">Size</div>
+      <div class="list-col downloaded">Downloaded</div>
+      <div class="list-col actions">Actions</div>
+    </div>
+    <div class="list-row" *ngFor="let item of downloads()">
+      <div class="list-col name">
+        <i class="pi pi-file"></i>
+        {{ item.name }}
+      </div>
+      <div class="list-col type">{{ item.type || 'File' }}</div>
+      <div class="list-col size">{{ item.size | documentSize }}</div>
+      <div class="list-col downloaded">{{ item.downloadedAt | date: 'short' }}</div>
+      <div class="list-col actions">
+        <button class="action-btn remove" (click)="removeDownload(item)" title="Remove">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

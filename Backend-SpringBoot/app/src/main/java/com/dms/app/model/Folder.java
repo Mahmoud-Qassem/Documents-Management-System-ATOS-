@@ -21,8 +21,10 @@ public class Folder extends MongoBaseEntity {
 
     private String id;
     private String name;
+    @JsonIgnore
     private String path;
     private String parentId;
+    @JsonIgnore
     private boolean deleted;
     private Long size;
     private String ownerName;

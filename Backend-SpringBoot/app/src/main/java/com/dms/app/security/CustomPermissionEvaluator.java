@@ -1,5 +1,7 @@
 package com.dms.app.security;
 
+import com.dms.app.model.Folder;
+import com.dms.app.model.UserFile;
 import com.dms.app.repository.FolderRepository;
 import com.dms.app.repository.PersonRepository;
 import com.dms.app.repository.UserFileRepository;
@@ -23,14 +25,13 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
     @Override
     public boolean hasPermission(Authentication authentication, Serializable targetId, String targetType, Object permission) {
-        CustomUserDetails userDetails = (CustomUserDetails)authentication.getPrincipal();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String nationalId = userDetails.getNationalId();
 
         return switch (targetType) {
             case "USER_FILE" -> hasUserFilePermission(nationalId, targetId.toString(), permission.toString());
-            case "FOLDER" -> hasFolderPermission(nationalId, targetId.toString(),permission.toString());
-            case "PERSON" -> hasPersonPermission(nationalId, targetId.toString(),permission.toString());
-            case "OWNER" -> nationalId.equals(targetId.toString());
+            case "FOLDER" -> hasFolderPermission(nationalId, targetId.toString(), permission.toString());
+            case "PERSON" -> hasPersonPermission(nationalId, targetId.toString(), permission.toString());
             default -> false;
         };
     }
@@ -40,36 +41,56 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
         return false;
     }
 
-    private boolean hasUserFilePermission(String ownerId, String targetId, String permission) {
-        switch (permission) {
-            case "test" -> {
-                return true;
-            }
-            default -> {
-                return userFileRepository.findById(targetId)
-                    .map(file -> file.getOwnerId().equals(ownerId))
-                    .orElse(false);
-            }
-        }
-    }
-    private boolean hasFolderPermission(String ownerId, String targetId, String permission) {
-        if(targetId.equals("root"))
+    private boolean hasUserFilePermission(String nationalId, String targetId, String permission) {
+        // if nationalId is ownerId return true
+        UserFile file = userFileRepository.findById(targetId).orElse(null);
+        if (file == null)
+            return false;
+        if (file.getOwnerId().equals(nationalId))
             return true;
-        switch (permission) {
-            case "test" -> {
-                return true;
-            }
-            default -> {
 
-                return folderRepository.findById(targetId)
-                        .map(file ->
-                        {
-                            return file.getOwnerId().equals(ownerId);
-                        })
-                        .orElse(false);
-            }
+        // if DOWNLOAD then user can read, preview, download
+        log.info("Permission: " + permission);
+        boolean access = false;
+
+        if (permission.equals("DOWNLOAD") || permission.equals("READ") || permission.equals("PREVIEW")) {
+            access |= file.getSharedWith().stream().anyMatch(entry ->
+                    entry.getUserId().equals(nationalId) && (entry.getPermission().equals("DOWNLOAD")));
         }
+        if (permission.equals("PREVIEW")) {
+            access|= file.getSharedWith().stream().anyMatch(entry ->
+                    entry.getUserId().equals(nationalId) && entry.getPermission().equals("READ"));
+        }
+
+        access|= file.getSharedWith().stream().anyMatch(entry ->
+                    entry.getUserId().equals(nationalId) && entry.getPermission().equals(permission));
+
+        log.info("Access: " + (access?"Allowed":"Denied"));
+        log.info("________________");
+        return access;
+
+
     }
+
+    private boolean hasFolderPermission(String nationalId, String targetId, String permission) {
+        // if nationalId is ownerId return true
+        Folder folder = folderRepository.findById(targetId).orElse(null);
+        if (folder == null)
+            return false;
+        if (folder.getOwnerId().equals(nationalId))
+            return true;
+        else
+            return false;
+
+//        if(folder.getSharedWith() != null) {
+//            return folder.getSharedWith().stream().anyMatch(entry ->
+//                    entry.getUserId().equals(nationalId) && entry.getPermission().equals(permission));
+//        }
+//        else
+//            return false;
+
+    }
+
     private boolean hasPersonPermission(String nationalId, String email, String permission) {
         switch (permission) {
             case "test" -> {

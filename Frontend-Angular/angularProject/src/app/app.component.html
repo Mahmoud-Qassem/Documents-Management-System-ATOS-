@@ -1,3 +1,8 @@
 <app-navbar></app-navbar>
 <app-modal></app-modal>
-<router-outlet />
+<div class="app-wrapper">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <router-outlet />
+  </div>
+</div>

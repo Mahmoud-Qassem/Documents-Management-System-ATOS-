@@ -3,15 +3,21 @@ package com.dms.app.service;
 import com.dms.app.exception.CanNotCreateFolderException;
 import com.dms.app.exception.CanNotDeleteFolderException;
 import com.dms.app.model.Folder;
+import com.dms.app.model.SearchCriteria;
 import com.dms.app.model.UserFile;
 import com.dms.app.repository.FolderRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 @Slf4j
@@ -59,6 +65,9 @@ public class FolderService {
             folder.setOwnerId(ownerId);
             folder.setOwnerName(ownerName);
             folder.setSize(0L);
+            // crnt time
+            LocalDateTime crntTime = LocalDateTime.now();
+            folder.setCreatedAt(crntTime);
 
             folderRepository.save(folder);
 
@@ -119,8 +128,9 @@ public class FolderService {
         return existing;
     }
 
-    public List<Folder> getDeletedFolders(String ownerId) {
-        return folderRepository.findAllByOwnerIdAndDeleted(ownerId, true, limit);
+    public Page<Folder> getDeletedFolders(String ownerId) {
+        Page<Folder> folders = folderRepository.findAllByOwnerIdAndDeleted(ownerId, true, limit);
+        return folders;
     }
 
     public Folder restoreFolder(String folderId) {
@@ -131,20 +141,23 @@ public class FolderService {
         return folderRepository.save(existing);
     }
 
-    public List<Folder> getFoldersByParentId(String ownerId, String parentId) {
+    public Page<Folder> getFoldersByParentId(String ownerId, String parentId) {
         if ("root".equals(parentId)) {
             parentId = ownerId + "_root";
         }
-        return folderRepository.findAllByParentIdAndDeleted(parentId, false, limit);
+        Page<Folder>folders = folderRepository.findAllByParentIdAndDeleted(parentId, false, limit);
+        return folders;
     }
 
     public Folder getFolderById(String folderId) {
-        return folderRepository.findById(folderId)
+        Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
+        return folder;
     }
 
-    public List<Folder> getFoldersByOwnerId(String ownerId) {
-        return folderRepository.findAllByOwnerIdAndDeleted(ownerId, false, limit);
+    public Page<Folder> getFoldersByOwnerId(String ownerId) {
+        Page<Folder> folders = folderRepository.findAllByOwnerIdAndDeleted(ownerId, false, limit);
+        return folders;
     }
 
     public String getFolderPath(String folderId) {
@@ -152,4 +165,68 @@ public class FolderService {
                 .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + folderId));
         return folder.getPath();
     }
+    public void increaseFolderSize(String folderId, long fileSize) {
+        updateFolderSize(folderId, fileSize);
+    }
+
+    public void decreaseFolderSize(String folderId, long fileSize) {
+        updateFolderSize(folderId, -fileSize);
+    }
+
+    private void updateFolderSize(String folderId, long delta) {
+        if (folderId.endsWith("_root")) {
+            return;
+        }
+
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new RuntimeException("Folder not found: " + folderId));
+        String parentId = folder.getParentId();
+        updateFolderSize(parentId, delta);
+        // Now update this folder
+        folder.setSize(folder.getSize() + delta);
+        folderRepository.save(folder);
+    }
+
+
+    public Page<Folder> searchFolders(String ownerId, SearchCriteria params) {
+
+        String name = params.getName();
+        String parentId = params.getFolderId();   // same key used for parent folder
+        boolean deleted = params.getDeleted();
+        int page = params.getPage();
+        int size = params.getSize();
+        String sort = params.getSort();
+        String dir = params.getDir();
+
+        if(parentId.equals("root")) parentId=ownerId+"_root";
+        Page<Folder> folders;
+        Pageable pageable = getPageable(page, size, sort, dir);
+
+        if (deleted) {
+            if (name != null && !name.isEmpty()) {
+                log.info("search folder by name {}", name);
+                return folderRepository.findByDeletedAndOwnerIdAndName(true, ownerId, name, pageable);
+            }
+            return folderRepository.findAllByOwnerIdAndDeleted(ownerId, true, pageable);
+        } else {
+            if (name != null && !name.isEmpty()) {
+                log.info("search folder by name {}", name);
+                return folderRepository.findByDeletedAndOwnerIdAndParentIdAndName(deleted, ownerId, parentId, name, pageable);
+            }
+        }
+
+        return  folderRepository.findAllByOwnerIdAndDeletedAndParentId(
+                ownerId, deleted, parentId, pageable
+        );
+    }
+
+    private Pageable getPageable(int page, int size, String sort, String sortDirection) {
+        if (sort.isEmpty() || (!sort.equalsIgnoreCase("name") && !sort.equalsIgnoreCase("size") && !sort.equalsIgnoreCase("type") && !sort.equalsIgnoreCase("createdAt")))
+            sort = "name";
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
+        return pageable;
+    }
+
+
 }

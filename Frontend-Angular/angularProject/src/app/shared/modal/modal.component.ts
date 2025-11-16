@@ -10,13 +10,13 @@ import { CommonModule } from '@angular/common';
     <div class="app-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">{{ title }}</h3>
-        <button class="btn-icon" aria-label="Close" (click)="close.emit()"><i class="pi pi-times"></i></button>
+        <button class="btn-icon" aria-label="Close" (click)="close.emit()" [disabled]="closeDisabled"><i class="pi pi-times"></i></button>
       </div>
       <div class="modal-body">
         <ng-content></ng-content>
       </div>
       <div class="modal-footer" *ngIf="showFooter">
-        <button class="btn secondary" (click)="close.emit()">Cancel</button>
+        <button class="btn secondary" (click)="close.emit()" [disabled]="closeDisabled">Cancel</button>
         <button class="btn primary" (click)="confirm.emit()">OK</button>
       </div>
     </div>
@@ -32,9 +32,14 @@ import { CommonModule } from '@angular/common';
       transition: all var(--transition-normal) var(--easing-ease);
     }
 
-    .btn-icon:hover {
+    .btn-icon:hover:not(:disabled) {
       color: var(--accent-strong);
       transform: scale(1.1);
+    }
+
+    .btn-icon:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn {
@@ -68,14 +73,19 @@ import { CommonModule } from '@angular/common';
       border: 1px solid var(--surface-muted);
     }
 
-    .btn.secondary:hover {
+    .btn.secondary:hover:not(:disabled) {
       background: var(--surface-card);
       border-color: var(--surface-muted);
       transform: translateY(-2px);
     }
 
-    .btn.secondary:active {
+    .btn.secondary:active:not(:disabled) {
       transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .modal-title {
@@ -89,10 +99,13 @@ export class ModalComponent{
   @Input() visible = false;
   @Input() title = '';
   @Input() showFooter = true;
+  @Input() closeDisabled = false;
   @Output() close = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<void>();
 
   onOverlayClick(e:Event){
-    this.close.emit();
+    if (!this.closeDisabled) {
+      this.close.emit();
+    }
   }
 }

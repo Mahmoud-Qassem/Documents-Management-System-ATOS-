@@ -1,0 +1,53 @@
+<div class="shared-users-overlay" [class.open]="visible" (click)="closeModal()" role="dialog" [attr.aria-hidden]="!visible">
+  <div class="shared-users-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Shared Users</h3>
+      <button class="btn-icon" aria-label="Close" (click)="closeModal()"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <p class="info-text" *ngIf="!loading() && shareRecords().length === 0">This file is not shared with anyone yet.</p>
+
+      <p class="status-text" *ngIf="loading()">Loading share details...</p>
+      <p class="error-text" *ngIf="error()">{{ error() }}</p>
+
+      <div class="users-list" *ngIf="!loading() && shareRecords().length > 0">
+        <div class="user-item" *ngFor="let record of shareRecords()">
+          <div class="user-info">
+            <div class="user-email">{{ record.email }}</div>
+            <div class="user-shared-date" *ngIf="record.sharedAt">Shared on {{ record.sharedAt | date: 'short' }}</div>
+          </div>
+
+          <div class="user-actions" *ngIf="editingEmail() !== record.email">
+            <div class="permission-display" [class.read-only]="record.permission === 'READ'" [class.download]="record.permission === 'DOWNLOAD'">
+              {{ getPermissionLabel(record.permission) }}
+            </div>
+            <button class="action-btn edit-btn" (click)="startEditPermission(record)" title="Edit permission">
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button class="action-btn remove-btn" (click)="removeAccess(record.email)" title="Remove access">
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+
+          <div class="user-edit" *ngIf="editingEmail() === record.email">
+            <select class="permission-select" [(ngModel)]="editingPermission">
+              <option value="READ">READ ONLY</option>
+              <option value="DOWNLOAD">DOWNLOAD</option>
+            </select>
+            <button class="action-btn save-btn" (click)="savePermission()" title="Save">
+              <i class="pi pi-check"></i>
+            </button>
+            <button class="action-btn cancel-btn" (click)="cancelEdit()" title="Cancel">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn secondary" (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>

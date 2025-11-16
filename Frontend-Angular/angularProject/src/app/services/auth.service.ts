@@ -19,9 +19,28 @@ export interface RegisterPayload {
 
 export type ProfilePayload = Omit<RegisterPayload, 'password'> & { password?: string };
 
+export interface PersonResponseDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  nationalId: string;
+  mobileNumber?: string;
+  address?: string;
+}
+
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  currentPassword: string;
+  newPassword?: string;
+  mobileNumber?: string;
+  address?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private base = 'http://localhost:8080/auth';
+  private personsBase = 'http://localhost:8080/api/persons';
   private tokenKey = 'jwt_token';
 
   // reactive auth state
@@ -71,14 +90,14 @@ export class AuthService {
   }
 
   /** ------------------ PROFILE ------------------ **/
-  getProfile(): Observable<ProfilePayload> {
-    return this.http.get<ProfilePayload>(`${this.base}/profile`).pipe(
+  getProfile(): Observable<PersonResponseDto> {
+    return this.http.get<PersonResponseDto>(`${this.personsBase}/registered`).pipe(
       catchError(this.handleError)
     );
   }
 
-  updateProfile(payload: ProfilePayload): Observable<any> {
-    return this.http.put(`${this.base}/profile`, payload).pipe(
+  updateProfile(payload: UpdateProfileRequest): Observable<any> {
+    return this.http.post(`${this.personsBase}/updateProfile`, payload).pipe(
       catchError(this.handleError)
     );
   }

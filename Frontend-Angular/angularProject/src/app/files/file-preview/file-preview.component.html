@@ -1,0 +1,102 @@
+<div class="preview-container">
+  <!-- Toolbar -->
+  <div class="preview-toolbar">
+    <div class="toolbar-left">
+      <button class="back-button" (click)="goBack()" aria-label="Go back">
+        <i class="pi pi-arrow-left"></i> Back
+      </button>
+    </div>
+    <div class="toolbar-center">
+      <div class="file-info">
+        <h2 class="file-name">{{ fileName() || 'Preview' }}</h2>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <button
+        class="toolbar-action download-button"
+        (click)="downloadFile()"
+        aria-label="Download file">
+        <i class="pi pi-download"></i> Download
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="loading-container" *ngIf="loading()">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading preview...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-container" *ngIf="!loading() && error()">
+    <div class="error-box">
+      <i class="pi pi-exclamation-circle"></i>
+      <p class="error-message">{{ error() }}</p>
+      <button class="retry-button" (click)="loadPreview(fileId()!)">Retry</button>
+    </div>
+  </div>
+
+  <!-- Preview Content -->
+  <div class="preview-content" *ngIf="!loading() && !error() && previewUrl()">
+    <!-- PDF Preview -->
+    <div class="preview-area pdf-preview" *ngIf="getPreviewType() === 'pdf'">
+      <iframe 
+        [src]="previewUrl()" 
+        class="pdf-viewer"
+        frameborder="0"
+        allowfullscreen
+        aria-label="PDF preview">
+      </iframe>
+    </div>
+
+    <!-- Image Preview -->
+    <div class="preview-area image-preview" *ngIf="getPreviewType() === 'image'">
+      <img 
+        [src]="previewUrl()" 
+        class="image-viewer"
+        alt="Image preview"
+        loading="lazy" />
+    </div>
+
+    <!-- Text Preview -->
+    <div class="preview-area text-preview" *ngIf="getPreviewType() === 'text'">
+      <iframe 
+        [src]="previewUrl()" 
+        class="text-viewer"
+        frameborder="0"
+        aria-label="Text preview">
+      </iframe>
+    </div>
+  </div>
+
+  <!-- Unsupported File Type -->
+  <div class="unsupported-container" *ngIf="!loading() && !error() && !supportedForPreview()">
+    <div class="unsupported-box">
+      <i class="pi pi-file"></i>
+      <h3>Preview not available</h3>
+      <p>This file type cannot be previewed in the browser.</p>
+      <p class="file-type-info">File type: <strong>{{ fileType() || mimeType() }}</strong></p>
+      <button class="download-button" (click)="downloadFile()">
+        <i class="pi pi-download"></i> Download File Instead
+      </button>
+    </div>
+  </div>
+
+  <!-- File Metadata -->
+  <div class="preview-footer" *ngIf="!loading() && fileName()">
+    <div class="metadata">
+      <div class="metadata-item" *ngIf="fileName()">
+        <span class="metadata-label">File Name:</span>
+        <span class="metadata-value">{{ fileName() }}</span>
+      </div>
+      <div class="metadata-item" *ngIf="fileType()">
+        <span class="metadata-label">File Type:</span>
+        <span class="metadata-value">{{ fileType() }}</span>
+      </div>
+      <div class="metadata-item" *ngIf="fileSize()">
+        <span class="metadata-label">File Size:</span>
+        <span class="metadata-value">{{ fileSize() | documentSize }}</span>
+      </div>
+    </div>
+  </div>
+</div>

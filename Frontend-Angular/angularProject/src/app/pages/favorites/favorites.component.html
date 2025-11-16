@@ -1,0 +1,74 @@
+<div class="favorites-container">
+  <div class="page-header">
+    <h1 class="page-title">Favorites</h1>
+    <div class="header-controls">
+      <div class="view-controls">
+        <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="setView('grid')" title="Grid view" aria-label="Grid view">
+          <i class="pi pi-th-large"></i>
+        </button>
+        <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="setView('list')" title="List view" aria-label="List view">
+          <i class="pi pi-list"></i>
+        </button>
+      </div>
+      <button class="clear-btn" *ngIf="favorites().length > 0" (click)="clearAll()" title="Clear all favorites" aria-label="Clear all favorites">
+        <i class="pi pi-trash"></i>
+        Clear All
+      </button>
+    </div>
+  </div>
+
+  <p class="error-text" *ngIf="error()">{{ error() }}</p>
+
+  <div class="favorites-empty" *ngIf="favorites().length === 0 && !error()">
+    <i class="pi pi-star"></i>
+    <p>No favorites yet</p>
+  </div>
+
+  <!-- Grid View -->
+  <div class="favorites-grid" *ngIf="viewMode() === 'grid' && favorites().length > 0">
+    <div class="favorite-item-card" *ngFor="let item of favorites()" (click)="openItem(item)">
+      <div class="item-actions">
+        <button class="action-btn remove" (click)="removeFavorite(item, $event)" title="Remove from favorites">
+          <i class="pi pi-times"></i>
+        </button>
+        <button class="action-btn download" (click)="downloadItem(item, $event)" title="Download">
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
+      <div class="item-icon" [class.folder-icon]="item.kind === 'folder'">
+        <i class="pi" [ngClass]="getItemIcon(item)"></i>
+      </div>
+      <div class="item-info">
+        <div class="item-name" [title]="item.name">{{ item.name }}</div>
+        <div class="item-meta">{{ item.kind === 'folder' ? 'Folder' : 'File' }}</div>
+        <div class="item-added">Added {{ item.addedAt | date: 'short' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div class="favorites-list" *ngIf="viewMode() === 'list' && favorites().length > 0">
+    <div class="list-header">
+      <div class="list-col name">Name</div>
+      <div class="list-col type">Type</div>
+      <div class="list-col added">Added</div>
+      <div class="list-col actions">Actions</div>
+    </div>
+    <div class="list-row" *ngFor="let item of favorites()" (click)="openItem(item)">
+      <div class="list-col name">
+        <i class="pi" [ngClass]="getItemIcon(item)"></i>
+        {{ item.name }}
+      </div>
+      <div class="list-col type">{{ item.kind === 'folder' ? 'Folder' : 'File' }}</div>
+      <div class="list-col added">{{ item.addedAt | date: 'short' }}</div>
+      <div class="list-col actions" (click)="$event.stopPropagation()">
+        <button class="action-btn" (click)="downloadItem(item, $event)" title="Download">
+          <i class="pi pi-download"></i>
+        </button>
+        <button class="action-btn remove" (click)="removeFavorite(item, $event)" title="Remove">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

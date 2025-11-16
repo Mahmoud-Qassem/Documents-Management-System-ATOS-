@@ -1,0 +1,44 @@
+<aside class="sidebar" [class.collapsed]="isCollapsed()" [class.pinned]="isPinned()" (mouseenter)="!isPinned() && isCollapsed.set(false)" (mouseleave)="!isPinned() && isCollapsed.set(true)">
+  <div class="sidebar-header">
+    <button class="toggle-btn" (click)="toggleSidebar()" [title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Toggle sidebar">
+      <i class="pi" [ngClass]="isCollapsed() ? 'pi-chevron-right' : 'pi-chevron-left'"></i>
+    </button>
+    <span class="sidebar-title" *ngIf="!isCollapsed()">Navigation</span>
+    <button class="pin-btn" (click)="togglePin()" [title]="isPinned() ? 'Unpin sidebar' : 'Pin sidebar'" aria-label="Pin sidebar" *ngIf="!isCollapsed()">
+      <i class="pi" [ngClass]="isPinned() ? 'pi-lock' : 'pi-lock-open'"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section" *ngFor="let section of sections">
+      <button class="section-header" (click)="toggleSection(section.title)" [title]="section.title" aria-label="Toggle section">
+        <i class="pi" [ngClass]="'pi-' + getSectionIcon(section.title).split('-')[1]"></i>
+        <span class="section-title" *ngIf="!isCollapsed()">{{ section.title }}</span>
+        <i class="pi section-toggle" [ngClass]="isSectionExpanded(section.title) ? 'pi-chevron-down' : 'pi-chevron-right'" *ngIf="!isCollapsed()"></i>
+      </button>
+
+      <div class="nav-items" [class.expanded]="isSectionExpanded(section.title)">
+        <a *ngFor="let item of section.items"
+           class="nav-item"
+           [routerLink]="item.route"
+           routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: false }"
+           [title]="item.label"
+           (click)="navigate(item)">
+          <i class="pi" [ngClass]="'pi-' + item.icon.split('-')[1]"></i>
+          <span class="nav-label" *ngIf="!isCollapsed()">{{ item.label }}</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer" *ngIf="!isCollapsed()">
+    <div class="storage-info">
+      <div class="storage-label">Storage</div>
+      <div class="storage-bar">
+        <div class="storage-used" style="width: 65%"></div>
+      </div>
+      <div class="storage-text">6.5 GB / 15 GB</div>
+    </div>
+  </div>
+</aside>

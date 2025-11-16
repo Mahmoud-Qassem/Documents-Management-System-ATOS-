@@ -12,9 +12,10 @@ import lombok.NoArgsConstructor;
 
 public class PersonResponseDto {
 
-    private Long id;
     private String firstName;
     private String lastName;
     private String email;
+    private String nationalId;
     private String mobileNumber;
+    private String address;
 }

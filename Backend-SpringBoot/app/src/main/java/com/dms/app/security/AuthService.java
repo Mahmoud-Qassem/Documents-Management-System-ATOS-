@@ -4,12 +4,16 @@ import com.dms.app.Constants;
 import com.dms.app.dto.PersonLoginDto;
 import com.dms.app.dto.PersonRegisterDto;
 import com.dms.app.mapper.PersonMapper;
+import com.dms.app.model.Folder;
 import com.dms.app.model.Person;
 import com.dms.app.repository.PersonRepository;
+import com.dms.app.service.FolderService;
 import com.dms.app.service.PersonService;
+import com.dms.app.service.StorageManager;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,23 +29,31 @@ import java.util.Map;
 @Slf4j
 @Service
 public class AuthService {
+    @Value("local.folder.path")
+    private String localFolderPath;
     private final PasswordEncoder passwordEncoder;
     private final PersonRepository personRepository;
     private final PersonMapper personMapper;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final StorageManager storageManager;
+    private final FolderService folderService;
 
     @Autowired
     public AuthService(PersonService personService,
                        PasswordEncoder passwordEncoder,
                        PersonRepository personRepository,
                        PersonMapper personMapper,
-                       AuthenticationManager authenticationManager, JwtService jwtService) {
+                       AuthenticationManager authenticationManager,
+                       JwtService jwtService,
+                       StorageManager storageManager, FolderService folderService) {
         this.passwordEncoder = passwordEncoder;
         this.personRepository = personRepository;
         this.personMapper = personMapper;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.storageManager = storageManager;
+        this.folderService = folderService;
     }
 
 
@@ -84,13 +96,11 @@ public class AuthService {
         personRepository.save( personMapper.toEntity(person) );
 
         // Create folder for the new person
-        String basePath = "E:\\06_Java\\Fullstack-dms\\Backend-SpringBoot\\UsersUploads";
+        String basePath = localFolderPath;
         String folderName = person.getNationalId() + "_root";
 
         // to do call the storage manager
-        File folder = new File(basePath, folderName);
-        boolean created = folder.mkdirs();
-
+        storageManager.createFolder(basePath+"\\"+ folderName);
 
         return "User registered successfully";
     }

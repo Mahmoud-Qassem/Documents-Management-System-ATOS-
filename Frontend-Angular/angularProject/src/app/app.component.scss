@@ -1,0 +1,38 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+app-navbar {
+  display: block;
+  flex-shrink: 0;
+  z-index: 1000;
+}
+
+app-modal {
+  z-index: 2000;
+}
+
+.app-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+app-sidebar {
+  display: block;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}

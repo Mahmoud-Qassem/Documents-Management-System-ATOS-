@@ -4,7 +4,7 @@
       <span class="brand-logo" aria-hidden="true"><i class="pi pi-folder"></i></span>
       <span class="brand-name">DMS</span>
     </a>
-    <p class="hello-message" *ngIf="userName() && isLoggedIn()">{{ "Hello, " + userName() + "!" }}</p>
+    <p class="hello-message" *ngIf="userFullName() && isLoggedIn()">{{ "Hello, " + userFullName() + "!" }}</p>
 
     <div class="nav-actions">
       <a class="nav-link" routerLink="/home"><i class="pi pi-home" aria-hidden="true"></i> Home</a>

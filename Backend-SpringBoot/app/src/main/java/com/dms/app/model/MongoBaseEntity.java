@@ -11,7 +11,7 @@ public abstract class MongoBaseEntity {
 
     @CreatedDate
     @Field("created_at")
-    @JsonIgnore
+//    @JsonIgnore
     private LocalDateTime createdAt;
 
     @LastModifiedDate

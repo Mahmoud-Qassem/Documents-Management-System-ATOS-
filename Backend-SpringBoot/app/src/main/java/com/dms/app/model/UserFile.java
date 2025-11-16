@@ -1,5 +1,6 @@
 package com.dms.app.model;
 
+import com.dms.app.dto.SharedUserEntry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,8 @@ import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+
+import java.util.List;
 
 @Document(collection = "documents")
 @Data
@@ -48,4 +51,7 @@ public class UserFile extends MongoBaseEntity {
     @Indexed
     private String ownerId;
     private String ownerName;
+//    @JsonIgnore
+    private List<SharedUserEntry> sharedWith;
+    private boolean shared;
 }

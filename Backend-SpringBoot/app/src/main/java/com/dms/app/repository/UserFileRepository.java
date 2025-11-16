@@ -34,4 +34,8 @@ public interface UserFileRepository extends MongoRepository<UserFile, String> {
     Page<UserFile> findByDeletedAndOwnerIdAndType(boolean deleted, String ownerId, String type, Pageable pageable);
 
     Page<UserFile> findAllByOwnerIdAndDeletedAndFolderId(String ownerId, boolean deleted, String folderId, Pageable pageable);
+    @Query("{ 'sharedWith.userId': ?0 }")
+    Page<UserFile> findBySharedWithUserId(String userId, Pageable pageable);
+
+    Page<UserFile> findBySharedAndOwnerId(boolean b, String nationalId, Pageable pageable);
 }

@@ -1,0 +1,94 @@
+<div class="shared-with-me-container">
+  <div class="page-header">
+    <h1 class="page-title">Shared With Me</h1>
+    <div class="view-controls">
+      <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="setView('grid')" title="Grid view" aria-label="Grid view">
+        <i class="pi pi-th-large"></i>
+      </button>
+      <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="setView('list')" title="List view" aria-label="List view">
+        <i class="pi pi-list"></i>
+      </button>
+    </div>
+  </div>
+
+  <p class="status-text" *ngIf="loading()">Loading shared files...</p>
+  <p class="error-text" *ngIf="error()">{{ error() }}</p>
+
+  <div class="shared-empty" *ngIf="!loading() && files().length === 0 && !error()">
+    <i class="pi pi-inbox"></i>
+    <p>No files shared with you yet</p>
+  </div>
+
+  <!-- Grid View -->
+  <div class="shared-grid" *ngIf="!loading() && viewMode() === 'grid' && files().length > 0">
+    <div class="shared-card" *ngFor="let file of files()">
+      <div class="card-header">
+        <div class="file-icon" [class.disabled]="file.permission === 'READ'">
+          <i class="pi" [ngClass]="getFileTypeIcon(file.type)"></i>
+        </div>
+      </div>
+      <div class="card-content">
+        <h3 class="file-name" [title]="file.name">{{ file.name }}</h3>
+        <p class="file-owner">Owner: {{ file.ownerName }}</p>
+        <p class="file-type">{{ file.type }}</p>
+        <p class="file-date">{{ file.createdAt | date: 'short' }}</p>
+        <div class="permission-badge" [class.read-only]="file.permission === 'READ'" [class.download]="file.permission === 'DOWNLOAD'">
+          {{ file.permission === 'READ' ? 'READ ONLY' : 'CAN DOWNLOAD' }}
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn preview-btn" (click)="previewFile(file)" title="Preview">
+          <i class="pi pi-eye"></i>
+        </button>
+        <button class="action-btn download-btn" [disabled]="!canDownload(file.permission)" (click)="downloadFile(file)" [title]="canDownload(file.permission) ? 'Download' : 'Download not allowed'">
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div class="shared-list" *ngIf="!loading() && viewMode() === 'list' && files().length > 0">
+    <div class="list-header">
+      <div class="list-col name">Name</div>
+      <div class="list-col owner">Owner</div>
+      <div class="list-col type">Type</div>
+      <div class="list-col permission">Permission</div>
+      <div class="list-col date">Created</div>
+      <div class="list-col actions">Actions</div>
+    </div>
+    <div class="list-row" *ngFor="let file of files()">
+      <div class="list-col name">
+        <i class="pi" [ngClass]="getFileTypeIcon(file.type)"></i>
+        {{ file.name }}
+      </div>
+      <div class="list-col owner">{{ file.ownerName }}</div>
+      <div class="list-col type">{{ file.type }}</div>
+      <div class="list-col permission">
+        <span class="permission-badge" [class.read-only]="file.permission === 'READ'" [class.download]="file.permission === 'DOWNLOAD'">
+          {{ file.permission === 'READ' ? 'READ ONLY' : 'DOWNLOAD' }}
+        </span>
+      </div>
+      <div class="list-col date">{{ file.createdAt | date: 'short' }}</div>
+      <div class="list-col actions">
+        <button class="action-btn" (click)="previewFile(file)" title="Preview">
+          <i class="pi pi-eye"></i>
+        </button>
+        <button class="action-btn" [disabled]="!canDownload(file.permission)" (click)="downloadFile(file)" [title]="canDownload(file.permission) ? 'Download' : 'Download not allowed'">
+          <i class="pi pi-download"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="!loading() && totalPages() > 1">
+    <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 0">
+      <i class="pi pi-chevron-left"></i>
+    </button>
+    <span class="page-info">Page {{ currentPage() + 1 }} of {{ totalPages() }}</span>
+    <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages() - 1">
+      <i class="pi pi-chevron-right"></i>
+    </button>
+  </div>
+</div>

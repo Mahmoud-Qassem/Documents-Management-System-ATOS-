@@ -1,8 +1,12 @@
 package com.dms.app.controller;
 
 import com.dms.app.exception.ErrorUploadingFileException;
+import com.dms.app.interfaces.PreviewResponse;
+import com.dms.app.model.SearchCriteria;
 import com.dms.app.model.UserFile;
 import com.dms.app.security.CustomUserDetails;
+import com.dms.app.interfaces.Base64Preview;
+import com.dms.app.interfaces.FilePreview;
 import com.dms.app.service.UserFileService;
 import com.dms.app.service.FolderService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Optional;
 
 
 @Slf4j
@@ -34,23 +42,40 @@ public class UserFileController {
 
     // sort by name, type, size
 
-    ///  search param  to do
-    @GetMapping("/search")
+    ///  SearchCriteria  to do
+    // api -> localhost:8080/api/files/search
+    @PostMapping("/search")
     public ResponseEntity<Page<UserFile>> searchFiles(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String folderId,
-            @RequestParam(defaultValue = "false") boolean deleted,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sort,
-            @RequestParam(defaultValue = "asc") String dir,
+           @RequestBody SearchCriteria searchCriteria,
             Authentication authentication) {
 
         String nationalId = getNationalId(authentication);
-        Page<UserFile> files = userFileService.searchFiles(nationalId, folderId, deleted, name, type, sort, dir, page, size);
+        Page<UserFile> files = userFileService.searchFiles(nationalId, searchCriteria);
         return ResponseEntity.ok(files);
     }
+
+    @GetMapping("/{fileId}/preview")
+    @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'PREVIEW')")
+    public ResponseEntity<?> previewFile(@PathVariable String fileId, Authentication authentication) {
+
+        String nationalId = getNationalId(authentication);
+        PreviewResponse result = userFileService.previewFile(fileId, nationalId);
+
+        if (result instanceof Base64Preview base64) {
+            return ResponseEntity.ok(base64);
+        }
+
+        if (result instanceof FilePreview filePreview) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(filePreview.mimeType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + filePreview.resource().getFilename() + "\"")
+                    .body(filePreview.resource());
+        }
+
+        throw new IllegalStateException("Unexpected preview response type: " + result.getClass());
+    }
+
 
     @GetMapping("/folder/{folderId}")
     @PreAuthorize("hasPermission(#folderId, 'FOLDER', 'READ')")
@@ -64,6 +89,7 @@ public class UserFileController {
     }
 
     @GetMapping("/deleted/{ownerId}")
+    @PreAuthorize("hasPermission(#ownerId, 'USER_FILE', 'READ')")
     public ResponseEntity<Page<UserFile>> getDeletedUserFiles(@PathVariable String ownerId,
                                                               @RequestParam(value = "page", defaultValue = "0") int page,
                                                               @RequestParam(value = "size", defaultValue = "10") int size,
@@ -98,12 +124,13 @@ public class UserFileController {
         UserFile createdFile = userFileService.uploadFile(
                 uploadedFile, nationalId, folderId, folderPath, ownerName
         );
+        folderService.increaseFolderSize(folderId, uploadedFile.getSize());
         return ResponseEntity.ok(createdFile);
     }
 
 
     @GetMapping("/download/{fileId}")
-    @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'READ')")
+    @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'DOWNLOAD')")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileId, Authentication authentication) {
         String nationalId = getNationalId(authentication);
         Resource file = userFileService.downloadFile(fileId, nationalId);
@@ -114,7 +141,7 @@ public class UserFileController {
         return response;
     }
 
-    @PutMapping("/{fileId}/newName")
+    @PostMapping("/{fileId}")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'UPDATE')")
     public ResponseEntity<UserFile> rename(@PathVariable String fileId, @RequestParam("newName") String newName) {
         if (newName.length() < 3) {
@@ -128,6 +155,7 @@ public class UserFileController {
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'DELETE')")
     public ResponseEntity<UserFile> deleteUserFile(@PathVariable String fileId) {
         UserFile deletedFile = userFileService.deleteFile(fileId);
+        folderService.decreaseFolderSize(deletedFile.getFolderId(), deletedFile.getSize());
         return ResponseEntity.ok(deletedFile);
     }
 
@@ -142,6 +170,7 @@ public class UserFileController {
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'UPDATE')")
     public ResponseEntity<UserFile> restoreFile(@PathVariable String fileId) {
         UserFile restoredFile = userFileService.restoreFile(fileId);
+        folderService.increaseFolderSize(restoredFile.getFolderId(), restoredFile.getSize());
         return ResponseEntity.ok(restoredFile);
     }
 

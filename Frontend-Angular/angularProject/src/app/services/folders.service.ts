@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { PageResponse } from './documents.service';
 
 export interface Folder {
   id: string;
@@ -11,6 +12,18 @@ export interface Folder {
   ownerId: string;
   ownerName: string;
   deleted?: boolean;
+  createdAt?: string | Date;
+}
+
+export interface SearchCriteria {
+  name?: string;
+  type?: string;
+  folderId?: string;
+  deleted?: boolean;
+  page?: number;
+  size?: number;
+  sort?: string;
+  dir?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -19,25 +32,14 @@ export class FoldersService {
 
   constructor(private http: HttpClient) { }
 
-  /** Get all folders for the logged-in owner (client can filter by parentId) */
-  getFolders(): Observable<Folder[]> {
-    return this.http.get<Folder[]>(this.base);
+  /** Search folders using SearchCriteria */
+  searchFolders(searchCriteria: SearchCriteria): Observable<PageResponse<Folder>> {
+    return this.http.post<PageResponse<Folder>>(`${this.base}/search`, searchCriteria);
   }
 
   /** Get a specific folder by id */
   getFolderById(folderId: string): Observable<Folder> {
     return this.http.get<Folder>(`${this.base}/${folderId}`);
-  }
-  /** Get a specific folder by id */
-  getFoldersByParentId(folderId: string | null): Observable<Folder[]> {
-    if (!folderId) folderId = "root";
-    return this.http.get<Folder[]>(`${this.base}/parent/${folderId}`);
-  }
-
-
-  /** Get deleted folders for a specific owner (for recycle bin) */
-  getDeletedFolders(ownerId: string): Observable<Folder[]> {
-    return this.http.get<Folder[]>(`${this.base}/deleted/${ownerId}`);
   }
 
   /** Create folder (JWT provides owner id and name). currentPath is the parent path signature like `id_name\\id2_name2\\` */
@@ -52,7 +54,7 @@ export class FoldersService {
 
   /** Update folder */
   updateFolder(folderId: string, folder: Partial<Folder>): Observable<Folder> {
-    return this.http.put<Folder>(`${this.base}/${folderId}`, folder);
+    return this.http.post<Folder>(`${this.base}/${folderId}`, folder);
   }
 
   /** Soft delete (mark as deleted = true) */

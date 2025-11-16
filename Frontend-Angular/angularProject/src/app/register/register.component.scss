@@ -103,9 +103,17 @@
   text-decoration: underline;
 }
 
+.optional {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
 .error {
+  display: block;
   color: #e11d48;
   font-size: 0.8125rem;
+  margin-top: 4px;
 }
 
 .submit-error {

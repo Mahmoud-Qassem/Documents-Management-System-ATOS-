@@ -1,42 +1,81 @@
 <div class="auth-wrapper">
-  <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+  <div *ngIf="profileLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <form *ngIf="!profileLoading" [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
     <h2 class="auth-title">Update profile</h2>
 
     <div class="two-col">
       <label class="field">
         <span class="label">First name</span>
         <input class="input" formControlName="firstName" />
+        <small class="error" *ngIf="serverErrors['firstName'] || (form.get('firstName')?.touched && form.get('firstName')?.invalid)">
+          <span *ngIf="serverErrors['firstName']">{{ serverErrors['firstName'] }}</span>
+          <span *ngIf="!serverErrors['firstName'] && form.get('firstName')?.errors?.['required']">First name is required.</span>
+          <span *ngIf="!serverErrors['firstName'] && form.get('firstName')?.errors?.['minlength']">Minimum 3 characters.</span>
+          <span *ngIf="!serverErrors['firstName'] && form.get('firstName')?.errors?.['maxlength']">Maximum 50 characters.</span>
+        </small>
       </label>
 
       <label class="field">
         <span class="label">Last name</span>
         <input class="input" formControlName="lastName" />
+        <small class="error" *ngIf="serverErrors['lastName'] || (form.get('lastName')?.touched && form.get('lastName')?.invalid)">
+          <span *ngIf="serverErrors['lastName']">{{ serverErrors['lastName'] }}</span>
+          <span *ngIf="!serverErrors['lastName'] && form.get('lastName')?.errors?.['required']">Last name is required.</span>
+          <span *ngIf="!serverErrors['lastName'] && form.get('lastName')?.errors?.['minlength']">Minimum 3 characters.</span>
+          <span *ngIf="!serverErrors['lastName'] && form.get('lastName')?.errors?.['maxlength']">Maximum 50 characters.</span>
+        </small>
       </label>
     </div>
 
     <label class="field">
-      <span class="label">Email</span>
-      <input class="input" formControlName="email" />
+      <span class="label">Email <span class="read-only-badge">(Read-only)</span></span>
+      <input class="input input-disabled" formControlName="email" />
     </label>
 
     <label class="field">
-      <span class="label">National ID</span>
-      <input class="input" formControlName="nationalId" />
+      <span class="label">National ID <span class="read-only-badge">(Read-only)</span></span>
+      <input class="input input-disabled" formControlName="nationalId" />
     </label>
 
     <label class="field">
-      <span class="label">Password (optional)</span>
-      <input class="input" type="password" formControlName="password" />
+      <span class="label">Current Password</span>
+      <input class="input" type="password" formControlName="currentPassword" placeholder="Enter your current password" />
+      <small class="error" *ngIf="serverErrors['currentPassword'] || (form.get('currentPassword')?.touched && form.get('currentPassword')?.invalid)">
+        <span *ngIf="serverErrors['currentPassword']">{{ serverErrors['currentPassword'] }}</span>
+        <span *ngIf="!serverErrors['currentPassword'] && form.get('currentPassword')?.errors?.['required']">Current password is required.</span>
+        <span *ngIf="!serverErrors['currentPassword'] && form.get('currentPassword')?.errors?.['minlength']">Password must be at least 8 characters long.</span>
+      </small>
     </label>
 
     <label class="field">
-      <span class="label">Mobile number</span>
-      <input class="input" formControlName="mobileNumber" />
+      <span class="label">New Password <span class="optional">(optional)</span></span>
+      <input class="input" type="password" formControlName="newPassword" placeholder="Leave blank to keep current password" />
+      <small class="error" *ngIf="serverErrors['newPassword'] || (form.get('newPassword')?.touched && form.get('newPassword')?.invalid)">
+        <span *ngIf="serverErrors['newPassword']">{{ serverErrors['newPassword'] }}</span>
+        <span *ngIf="!serverErrors['newPassword'] && form.get('newPassword')?.errors?.['minlength']">Password must be at least 8 characters long.</span>
+      </small>
     </label>
 
     <label class="field">
-      <span class="label">Address</span>
+      <span class="label">Mobile number <span class="optional">(optional)</span></span>
+      <input class="input" formControlName="mobileNumber" placeholder="e.g., 01012345678" />
+      <small class="error" *ngIf="serverErrors['mobileNumber'] || (form.get('mobileNumber')?.touched && form.get('mobileNumber')?.invalid)">
+        <span *ngIf="serverErrors['mobileNumber']">{{ serverErrors['mobileNumber'] }}</span>
+        <span *ngIf="!serverErrors['mobileNumber'] && form.get('mobileNumber')?.errors?.['pattern']">Invalid phone number.</span>
+      </small>
+    </label>
+
+    <label class="field">
+      <span class="label">Address <span class="optional">(optional)</span></span>
       <textarea class="input" formControlName="address"></textarea>
+      <small class="error" *ngIf="serverErrors['address'] || (form.get('address')?.touched && form.get('address')?.invalid)">
+        <span *ngIf="serverErrors['address']">{{ serverErrors['address'] }}</span>
+        <span *ngIf="!serverErrors['address'] && form.get('address')?.errors?.['maxlength']">Address cannot exceed 255 characters.</span>
+      </small>
     </label>
 
     <div class="actions">
