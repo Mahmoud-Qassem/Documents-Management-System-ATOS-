@@ -1,13 +1,4 @@
 Frontend-Angular/builder.config.json
 Backend-SpringBoot/UsersUploads
 
-feat: Implement shared files feature with grid and list views
 
-- Added SharedByMePage component for displaying files shared by the user.
-- Implemented loading, error handling, and pagination for shared files.
-- Created SharedWithMePage component for files shared with the user.
-- Added file preview and download functionality.
-- Introduced DownloadsService and FavoritesService for managing downloads and favorites.
-- Enhanced UI with SCSS styles for shared files, including responsive design.
-- Implemented recent items tracking with RecentService.
-- Added file-sharing capabilities in FileShareService.
