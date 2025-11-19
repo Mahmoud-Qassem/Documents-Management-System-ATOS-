@@ -77,59 +77,7 @@
 
 ---
 
-## 4. Architecture (Mermaid)
-
-> The following Mermaid block can be rendered by platforms that support Mermaid (GitHub, GitLab, mermaid-cli).
-
-```mermaid
-flowchart LR
-  subgraph Frontend
-    A[Angular SPA] --> |REST / Bearer JWT| B[Backend API (Spring Boot)]
-  end
-
-  subgraph Backend
-    B --> C[MySQL (RDS) - Users & Auth]
-    B --> D[MongoDB Atlas - Logs & Metadata]
-    B --> E[AWS S3 - File Storage]
-    B --> F[PermissionEvaluator & Auditing]
-  end
-
-  B --> G[Swagger / OpenAPI]
-  B --> H[Health Checks / CloudWatch]
-
-  style A fill:#f9f,stroke:#333,stroke-width:1px
-```
-
-**To export as image:**
-
-- Use mermaid-cli (`mmdc`) or an online Mermaid renderer to generate PNG/SVG from the code block.
-- Example: `mmdc -i architecture.mmd -o architecture.png` (after saving the Mermaid code into `architecture.mmd`).
-
----
-
-## 5. Screenshots & API Docs
-
-The repository contains a `screenshots/` directory with UI screenshots and Swagger/OpenAPI screenshots.
-
-```
-Screenshots/AuthControllerAPIs.png
-Screenshots/Dashboard.png
-Screenshots/Favorites.png
-Screenshots/FolderControllerAPIs.png
-Screenshots/Login.png
-Screenshots/Recent.png
-Screenshots/RecycleBin.png
-Screenshots/Register.png
-Screenshots/SharedByMe.png
-Screenshots/ShareWithMe.png
-Screenshots/UserFilesControllerAPIs.png
-Screenshots/UserFileSharingAPIs.png
-```
-
----
-
-## 6. Project structure (high-level)
-
+## 4. Architecture 
 ```
 dms/
  ├── src/
@@ -190,10 +138,27 @@ dms/
   │   └─ assets/screenshots/
   └─ angular.json
 ```
-
 ---
+## 5. Screenshots & API Docs
 
-## 7. Environment variables (example)
+The repository contains a `screenshots/` directory with UI screenshots and Swagger/OpenAPI screenshots.
+
+```
+Screenshots/AuthControllerAPIs.png
+Screenshots/Dashboard.png
+Screenshots/Favorites.png
+Screenshots/FolderControllerAPIs.png
+Screenshots/Login.png
+Screenshots/Recent.png
+Screenshots/RecycleBin.png
+Screenshots/Register.png
+Screenshots/SharedByMe.png
+Screenshots/ShareWithMe.png
+Screenshots/UserFilesControllerAPIs.png
+Screenshots/UserFileSharingAPIs.png
+```
+
+## 6. Environment variables (example)
 
 > _Never commit secrets to the repo._
 
@@ -223,11 +188,11 @@ APP_FRONTEND_BASE_URL=http://dms-angular-frontend.s3-website.eu-north-1.amazonaw
 
 ---
 
-## 8. Run locally (development)
+## 7. Run locally (development)
 
 **Backend**
 
-1. Clone repository
+1. Clone the repository
 2. Populate environment variables or `application.yml`
 3. Start local MySQL (or use Docker)
 
@@ -256,7 +221,7 @@ ng build --configuration=production
 
 ---
 
-## 9. API quick reference (short)
+## 8. API quick reference (short)
 
 Base URL (dev): `http://localhost:5000`
 
@@ -302,7 +267,7 @@ Base URL (dev): `http://localhost:5000`
 
 ---
 
-## 10. Deployment (high level)
+## 9. Deployment (high level)
 
 **Backend — Elastic Beanstalk**
 
@@ -324,7 +289,7 @@ Base URL (dev): `http://localhost:5000`
 
 ---
 
-## 11. What I learned
+## 10. What I learned
 
 - Authentication & token management (JWT + refresh tokens)
 - Building a secure REST API with Spring Boot and PermissionEvaluator
@@ -335,7 +300,7 @@ Base URL (dev): `http://localhost:5000`
 
 ---
 
-## 12. Future improvements
+## 11. Future improvements
 
 - File versioning and deduplication
 - Real-time notifications (WebSocket / push)
