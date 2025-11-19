@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { FilePreviewService, PreviewResponse } from '../../services/file-preview.service';
 import { DocumentsService } from '../../services/documents.service';
 import { DocumentSizePipe } from '../../pipes/file-size.pipe';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-file-preview',
@@ -23,6 +24,7 @@ export class FilePreviewComponent implements OnInit, OnDestroy {
   mimeType = signal<string>('');
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
+  downloadError = signal<string | null>(null);
   previewUrl = signal<SafeResourceUrl | SafeUrl | null>(null);
   previewBlob = signal<Blob | null>(null);
   isBase64Preview = signal<boolean>(false);
@@ -36,7 +38,8 @@ export class FilePreviewComponent implements OnInit, OnDestroy {
     private router: Router,
     private previewService: FilePreviewService,
     private documentsService: DocumentsService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private errorHandler: ErrorHandlerService
   ) { }
 
   ngOnInit() {
@@ -272,6 +275,7 @@ body {
     const fileId = this.fileId();
     if (!fileId) return;
 
+    this.downloadError.set(null);
     this.documentsService.downloadDocument(fileId).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
@@ -282,9 +286,10 @@ body {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        this.downloadError.set(null);
       },
       error: (err) => {
-        this.error.set('Failed to download file');
+        this.downloadError.set(this.errorHandler.getErrorMessage(err));
         console.error('Download error:', err);
       }
     });

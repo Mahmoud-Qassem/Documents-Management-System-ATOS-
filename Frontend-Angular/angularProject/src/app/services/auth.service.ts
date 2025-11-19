@@ -39,8 +39,8 @@ export interface UpdateProfileRequest {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private base = 'http://localhost:8080/auth';
-  private personsBase = 'http://localhost:8080/api/persons';
+  private base = 'http://mydms-app-env.eba-bwswqqze.eu-north-1.elasticbeanstalk.com/auth';
+  private personsBase = 'http://mydms-app-env.eba-bwswqqze.eu-north-1.elasticbeanstalk.com/api/persons';
   private tokenKey = 'jwt_token';
 
   // reactive auth state

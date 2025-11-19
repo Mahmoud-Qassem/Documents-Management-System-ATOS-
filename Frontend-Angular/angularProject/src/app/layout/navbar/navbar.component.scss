@@ -4,6 +4,8 @@
     border-bottom: 1px solid var(--surface-muted);
     transition: background var(--transition-slow) var(--easing-ease);
     color: #fff;
+    position: relative;
+    overflow: visible;
 }
 
 .nav-inner {
@@ -11,8 +13,10 @@
     margin: 0 auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 16px;
     padding: 10px 16px;
+    position: relative;
+    overflow: visible;
 }
 
 .brand {
@@ -39,6 +43,7 @@
     color: #fff;
     font-size: 16px;
     transition: all var(--transition-normal) var(--easing-ease);
+    flex-shrink: 0;
 }
 
 .brand-logo:hover {
@@ -51,7 +56,7 @@
     color: #fff;
 }
 
-.nav-actions {
+.nav-actions-desktop {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -67,7 +72,7 @@
 }
 
 .nav-link:hover {
-    background: var(--surface-muted);
+    background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
 }
 
@@ -90,7 +95,183 @@
     transform: translateY(0);
 }
 
-.hello-message {
+.hamburger-btn {
+    display: none;
+    background: transparent;
+    border: none;
     color: #fff;
-    transition: color var(--transition-normal) var(--easing-ease);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: all var(--transition-normal) var(--easing-ease);
+    flex-shrink: 0;
+
+    i {
+        font-size: 20px;
+    }
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+.nav-spacer {
+    flex: 1;
+}
+
+.mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all var(--transition-normal) var(--easing-ease);
+    flex-shrink: 0;
+    pointer-events: auto;
+    z-index: 1001;
+
+    i {
+        font-size: 20px;
+        display: block;
+    }
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1999;
+    cursor: pointer;
+}
+
+.mobile-menu {
+    display: none;
+    position: fixed;
+    top: var(--navbar-height, 64px);
+    right: 0;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-muted);
+    border-radius: 0 0 0 8px;
+    box-shadow: -8px 8px 24px rgba(0, 0, 0, 0.12);
+    width: min(250px, 85vw);
+    z-index: 2000;
+    overflow-y: auto;
+    pointer-events: auto;
+    max-height: calc(100vh - var(--navbar-height, 64px));
+    box-sizing: border-box;
+}
+
+.mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-normal) var(--easing-ease);
+    font-size: 0.95rem;
+    pointer-events: auto;
+
+    i {
+        font-size: 16px;
+        color: var(--pill-accent);
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background: var(--surface-muted);
+        color: var(--pill-accent);
+
+        i {
+            color: var(--pill-accent);
+        }
+    }
+
+    &:active {
+        background: rgba(234, 88, 12, 0.1);
+    }
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-actions-desktop {
+        display: none;
+    }
+
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-menu {
+        display: block;
+    }
+
+    .brand-name {
+        display: none;
+    }
+
+    .nav-spacer {
+        flex: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-inner {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .brand-logo {
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+    }
+
+    .hamburger-btn,
+    .mobile-menu-btn {
+        padding: 4px 6px;
+
+        i {
+            font-size: 18px;
+        }
+    }
+
+    .mobile-menu-item {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+
+        i {
+            font-size: 14px;
+        }
+    }
 }

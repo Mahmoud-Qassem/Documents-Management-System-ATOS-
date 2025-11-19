@@ -1,12 +1,14 @@
 <nav class="site-navbar">
   <div class="nav-inner">
+    <button class="hamburger-btn" (click)="toggleSidebar()" *ngIf="isLoggedIn()" title="Toggle menu" aria-label="Toggle sidebar menu">
+      <i class="pi pi-bars"></i>
+    </button>
     <a class="brand" routerLink="/home" aria-label="Home">
       <span class="brand-logo" aria-hidden="true"><i class="pi pi-folder"></i></span>
       <span class="brand-name">DMS</span>
     </a>
-    <p class="hello-message" *ngIf="userFullName() && isLoggedIn()">{{ "Hello, " + userFullName() + "!" }}</p>
 
-    <div class="nav-actions">
+    <div class="nav-actions-desktop">
       <a class="nav-link" routerLink="/home"><i class="pi pi-home" aria-hidden="true"></i> Home</a>
 
       <ng-container *ngIf="isLoggedIn(); else loggedOut">
@@ -18,7 +20,43 @@
         <a class="nav-link" routerLink="/login"><i class="pi pi-sign-in" aria-hidden="true"></i> Login</a>
         <a class="nav-link" routerLink="/register"><i class="pi pi-user-plus" aria-hidden="true"></i> Register</a>
       </ng-template>
+    </div>
 
+    <div class="nav-spacer"></div>
+
+    <button class="mobile-menu-btn" (click)="toggleMobileMenu()" type="button" title="More options" aria-label="More options" [attr.aria-expanded]="isMobileMenuOpen()">
+      <i class="pi pi-ellipsis-v"></i>
+    </button>
+
+    <div class="mobile-menu-overlay" *ngIf="isMobileMenuOpen()" (click)="closeMobileMenu()"></div>
+
+    <div class="mobile-menu" *ngIf="isMobileMenuOpen()">
+      <a class="mobile-menu-item" routerLink="/home" (click)="closeMobileMenu()">
+        <i class="pi pi-home" aria-hidden="true"></i>
+        <span>Home</span>
+      </a>
+
+      <ng-container *ngIf="isLoggedIn(); else mobileLoggedOut">
+        <a class="mobile-menu-item" routerLink="/profile" (click)="closeMobileMenu()">
+          <i class="pi pi-user" aria-hidden="true"></i>
+          <span>Profile</span>
+        </a>
+        <button class="mobile-menu-item" (click)="logout()">
+          <i class="pi pi-sign-out" aria-hidden="true"></i>
+          <span>Logout</span>
+        </button>
+      </ng-container>
+
+      <ng-template #mobileLoggedOut>
+        <a class="mobile-menu-item" routerLink="/login" (click)="closeMobileMenu()">
+          <i class="pi pi-sign-in" aria-hidden="true"></i>
+          <span>Login</span>
+        </a>
+        <a class="mobile-menu-item" routerLink="/register" (click)="closeMobileMenu()">
+          <i class="pi pi-user-plus" aria-hidden="true"></i>
+          <span>Register</span>
+        </a>
+      </ng-template>
     </div>
   </div>
 </nav>

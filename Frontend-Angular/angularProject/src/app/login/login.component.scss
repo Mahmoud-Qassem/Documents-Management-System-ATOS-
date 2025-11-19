@@ -141,22 +141,6 @@
   width: 100%;
 }
 
-/* Utilities alignment for remember + show password */
-.form-utilities {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-top: 6px;
-  gap: 12px;
-}
-
-.utility-left {
-  display: inline-flex;
-  gap: 12px;
-  align-items: center;
-}
-
-
 .error {
   color: #e11d48;
   font-size: 0.8125rem;

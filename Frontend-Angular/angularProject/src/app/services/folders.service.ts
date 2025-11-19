@@ -28,7 +28,7 @@ export interface SearchCriteria {
 
 @Injectable({ providedIn: 'root' })
 export class FoldersService {
-  private base = 'http://localhost:8080/api/folders';
+  private base = 'http://mydms-app-env.eba-bwswqqze.eu-north-1.elasticbeanstalk.com/api/folders';
 
   constructor(private http: HttpClient) { }
 

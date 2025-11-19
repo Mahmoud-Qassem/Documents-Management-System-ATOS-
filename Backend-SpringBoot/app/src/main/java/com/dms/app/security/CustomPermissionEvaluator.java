@@ -50,7 +50,7 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
             return true;
 
         // if DOWNLOAD then user can read, preview, download
-        log.info("Permission: " + permission);
+//        log.info("Permission: " + permission);
         boolean access = false;
 
         if (permission.equals("DOWNLOAD") || permission.equals("READ") || permission.equals("PREVIEW")) {
@@ -64,9 +64,9 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
         access|= file.getSharedWith().stream().anyMatch(entry ->
                     entry.getUserId().equals(nationalId) && entry.getPermission().equals(permission));
-
-        log.info("Access: " + (access?"Allowed":"Denied"));
-        log.info("________________");
+//
+//        log.info("Access: " + (access?"Allowed":"Denied"));
+//        log.info("________________");
         return access;
 
 

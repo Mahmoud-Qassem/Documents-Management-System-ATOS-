@@ -2,6 +2,7 @@ package com.dms.app.service;
 
 
 import com.dms.app.exception.CanNotDeleteFileException;
+import com.dms.app.exception.CanNotPreviewFileException;
 import com.dms.app.interfaces.Base64Preview;
 import com.dms.app.interfaces.FilePreview;
 import com.dms.app.interfaces.PreviewResponse;
@@ -23,10 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -36,17 +34,13 @@ import java.util.*;
 @Service
 public class UserFileService {
 
-
-    @Value("${local.folder.path}")
-    String basePath;
-
     @Value("${preview.base64.threshold-bytes:5242880}") // Default 5MB
     private long base64ThresholdBytes;
 
     private final UserFileRepository userFileRepository;
     private final StorageManager storageManager;
     private final PersonRepository personRepository;
-    private final Tika tika = new Tika(); // For robust MIME detection
+    private final Tika tika = new Tika();
 
     @Autowired
     public UserFileService(UserFileRepository userFileRepository, StorageManager storageManager, PersonRepository personRepository) {
@@ -56,31 +50,25 @@ public class UserFileService {
     }
 
 
-    public PreviewResponse previewFile(String fileId, String requesterId) {
-        UserFile file = getFileById(fileId); // Assume implemented elsewhere
+    public PreviewResponse previewFile(String fileId)
+            throws CanNotPreviewFileException, FileNotFoundException {
 
-        // --- Path validation (prevent directory traversal) ---
-        Path root = Paths.get(basePath).normalize().toAbsolutePath();
-        Path target = Paths.get(file.getFilePath()).normalize().toAbsolutePath();
-        if (!target.startsWith(root)) {
-            throw new SecurityException("Invalid file path detected.");
-        }
+        UserFile file = getFileById(fileId);
 
         try {
             long fileSize = storageManager.getFileSize(file.getFilePath());
-            File fileObj = storageManager.getFile(file.getFilePath());
 
-            if (!fileObj.exists()) {
-                throw new FileNotFoundException("File not found on disk.");
-            }
+            // --- Read small portion for MIME detection ---
+            InputStream headerStream = storageManager.getFileStream(file.getFilePath());
+            byte[] headerBytes = headerStream.readNBytes(8192);
+            headerStream.close();
 
-            // --- Detect MIME type safely using Apache Tika ---
-            String mimeType = tika.detect(fileObj);
+            String mimeType = tika.detect(headerBytes);
 
-            // --- Small file → Return Base64 encoded preview ---
+            // --- Small file → return Base64 ---
             if (fileSize <= base64ThresholdBytes) {
-                byte[] bytes = storageManager.readFileBytes(file.getFilePath());
-                String base64Data = Base64.getEncoder().encodeToString(bytes);
+                byte[] fileBytes = storageManager.readFileBytes(file.getFilePath());
+                String base64Data = Base64.getEncoder().encodeToString(fileBytes);
 
                 return new Base64Preview(
                         mimeType,
@@ -90,15 +78,17 @@ public class UserFileService {
                 );
             }
 
-            // --- Large file → Stream directly as Resource (efficient) ---
-            Resource resource = new InputStreamResource(new FileInputStream(fileObj));
+            // --- Large file → return streaming resource ---
+            InputStream fullStream = storageManager.getFileStream(file.getFilePath());
+            Resource resource = new InputStreamResource(fullStream);
             return new FilePreview(resource, mimeType);
 
         } catch (IOException e) {
             log.error("Error while preparing file preview for ID: {}", fileId, e);
-            throw new RuntimeException("Failed to preview file", e);
+            throw new CanNotPreviewFileException("Failed to preview file");
         }
     }
+
 
 
     public Page<UserFile> searchFiles(String ownerId, SearchCriteria params) {
@@ -153,10 +143,10 @@ public class UserFileService {
         return userFileRepository.findAllByOwnerIdAndDeleted(ownerId, true, pageable);
     }
 
-    public UserFile getFileById(String fileId) {
+    public UserFile getFileById(String fileId) throws FileNotFoundException {
         Optional<UserFile> userFile = userFileRepository.findById(fileId);
         if (!userFile.isPresent()) {
-            throw new RuntimeException("File not found");
+            throw new FileNotFoundException("File not found");
         }
         return userFile.get();
     }
@@ -197,11 +187,13 @@ public class UserFileService {
         return file;
     }
 
-    public Resource downloadFile(String fileId, String requesterId) {
+    public Resource downloadFile(String fileId) throws IOException {
         UserFile file = getFileById(fileId);
-        File toBeDownloaded = storageManager.getFile(file.getFilePath());
-        return new FileSystemResource(toBeDownloaded);
+
+        InputStream stream = storageManager.getFileStream(file.getFilePath());
+        return new InputStreamResource(stream);
     }
+
 
 
     public UserFile rename(String fileId, String newName) {

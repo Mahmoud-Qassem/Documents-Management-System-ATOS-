@@ -2,7 +2,6 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FileShareService, PageResponse } from '../../services/file-share.service';
-import { DocumentSizePipe } from '../../pipes/file-size.pipe';
 import { SharedUsersModalComponent } from '../../components/shared-users-modal/shared-users-modal.component';
 
 export interface SharedByMeFile {
@@ -17,7 +16,7 @@ export interface SharedByMeFile {
 @Component({
   selector: 'app-shared-by-me',
   standalone: true,
-  imports: [CommonModule, DocumentSizePipe, SharedUsersModalComponent],
+  imports: [CommonModule, SharedUsersModalComponent],
   templateUrl: './shared-by-me.page.html',
   styleUrls: ['./shared-by-me.page.scss']
 })

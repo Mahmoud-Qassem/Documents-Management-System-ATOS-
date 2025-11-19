@@ -89,7 +89,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            log.info("User authenticated successfully using JWT !!");
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 

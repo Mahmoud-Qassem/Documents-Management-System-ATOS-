@@ -1,7 +1,8 @@
 <app-navbar></app-navbar>
 <app-modal></app-modal>
 <div class="app-wrapper">
-  <app-sidebar></app-sidebar>
+  <app-sidebar *ngIf="authService.authState()"></app-sidebar>
+  <div class="sidebar-overlay" (click)="closeSidebar()" *ngIf="isSidebarOpen()"></div>
   <div class="app-content">
     <router-outlet />
   </div>

@@ -3,6 +3,8 @@ package com.dms.app.controller;
 import com.dms.app.dto.ShareRequest;
 import com.dms.app.dto.SharedFile;
 import com.dms.app.dto.SharedUserEntry;
+import com.dms.app.exception.UserNotFoundException;
+import com.dms.app.model.Folder;
 import com.dms.app.model.UserFile;
 import com.dms.app.security.CustomUserDetails;
 import com.dms.app.service.UserFileService;
@@ -15,6 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.List;
 @RestController
 @RequestMapping("/api/files")
@@ -29,7 +33,7 @@ public class UserFileSharingController {
     public ResponseEntity<UserFile> shareFile(
             @PathVariable String fileId,
             @RequestBody ShareRequest request
-    ) {
+    )throws FileNotFoundException {
         UserFile updated = userFileShareService.shareFile(fileId, request);
         return ResponseEntity.ok(updated);
     }
@@ -40,7 +44,7 @@ public class UserFileSharingController {
     public ResponseEntity<UserFile> removeShare(
             @PathVariable String fileId,
             @PathVariable String email
-    ) {
+    ) throws FileNotFoundException {
         UserFile updated = userFileShareService.removeShare(fileId, email);
         return ResponseEntity.ok(updated);
     }
@@ -52,7 +56,7 @@ public class UserFileSharingController {
             @PathVariable String fileId,
             @PathVariable String email,
             @RequestBody String permission
-    ) {
+    ) throws FileNotFoundException{
         UserFile updated = userFileShareService.updateSharePermission(fileId, email, permission);
         return ResponseEntity.ok(updated);
     }
@@ -62,7 +66,7 @@ public class UserFileSharingController {
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'OWNER')")
     public ResponseEntity<List<SharedUserEntry>> getSharedUsers(
             @PathVariable String fileId
-    ) {
+    ) throws FileNotFoundException{
         return ResponseEntity.ok(userFileShareService.getSharedUsers(fileId));
     }
 

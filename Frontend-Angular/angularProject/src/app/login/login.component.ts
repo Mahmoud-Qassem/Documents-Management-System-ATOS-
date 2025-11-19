@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { ErrorHandlerService } from '../services/error-handler.service';
 
 interface LoginPayload {
   email: string;
@@ -24,7 +25,13 @@ export class LoginComponent implements OnInit {
   showPassword = false;
   loaded = false;
 
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    private fb: FormBuilder,
+    private auth: AuthService,
+    private router: Router,
+    private errorHandler: ErrorHandlerService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   ngOnInit(): void {
     // protect route if already authenticated
@@ -83,16 +90,14 @@ export class LoginComponent implements OnInit {
       },
       error: (err: any) => {
         this.loading = false;
-        if (err?.error && typeof err.error === 'object') {
-          const fe = err.error.fieldErrors || err.error.fieldError || null;
-          if (fe && typeof fe === 'object') {
-            this.serverErrors = fe;
-            return;
-          }
-          this.error = err.error.message || err.error.statusMsg || err.message || 'Login failed';
+        // Check for field-level errors first
+        const fieldErrors = this.errorHandler.getFieldErrors(err);
+        if (Object.keys(fieldErrors).length > 0) {
+          this.serverErrors = fieldErrors;
           return;
         }
-        this.error = err?.message || 'Login failed';
+        // Get meaningful error message from backend
+        this.error = this.errorHandler.getErrorMessage(err);
       }
     });
   }

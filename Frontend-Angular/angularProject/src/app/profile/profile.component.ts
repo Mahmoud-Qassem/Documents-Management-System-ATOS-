@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthService, PersonResponseDto, UpdateProfileRequest } from '../services/auth.service';
+import { ErrorHandlerService } from '../services/error-handler.service';
 
 @Component({
   selector: 'app-profile',
@@ -20,7 +21,7 @@ export class ProfileComponent implements OnInit {
   profileLoading = true;
   userFullName = '';
 
-  constructor(private fb: FormBuilder, private auth: AuthService) { }
+  constructor(private fb: FormBuilder, private auth: AuthService, private errorHandler: ErrorHandlerService) { }
 
   ngOnInit(): void {
     this.initializeForm();
@@ -57,7 +58,7 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         this.profileLoading = false;
-        this.error = 'Failed to load profile data';
+        this.error = this.errorHandler.getErrorMessage(err) || 'Failed to load profile data';
       }
     });
   }
@@ -92,16 +93,14 @@ export class ProfileComponent implements OnInit {
       },
       error: (err: any) => {
         this.loading = false;
-        if (err?.error && typeof err.error === 'object') {
-          const fe = err.error.fieldErrors || err.error.fieldError || null;
-          if (fe && typeof fe === 'object') {
-            this.serverErrors = fe;
-            return;
-          }
-          this.error = err.error.message || err.error.statusMsg || 'Update failed';
+        // Check for field-level errors first
+        const fieldErrors = this.errorHandler.getFieldErrors(err);
+        if (Object.keys(fieldErrors).length > 0) {
+          this.serverErrors = fieldErrors;
           return;
         }
-        this.error = err?.message || 'Update failed';
+        // Get meaningful error message from backend
+        this.error = this.errorHandler.getErrorMessage(err) || 'Update failed';
       }
     });
   }

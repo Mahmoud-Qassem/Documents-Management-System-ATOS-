@@ -6,8 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:angularProject": "node dist/angular-project/server/server.mjs"
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {
@@ -17,11 +16,8 @@
     "@angular/forms": "^19.2.0",
     "@angular/platform-browser": "^19.2.0",
     "@angular/platform-browser-dynamic": "^19.2.0",
-    "@angular/platform-server": "^19.2.0",
     "@angular/router": "^19.2.0",
-    "@angular/ssr": "^19.2.18",
     "@primeuix/themes": "^1.2.5",
-    "express": "^4.18.2",
     "pako": "^2.1.0",
     "primeicons": "^7.0.0",
     "primeng": "^19.1.1",
@@ -33,9 +29,7 @@
     "@angular-devkit/build-angular": "^19.2.18",
     "@angular/cli": "^19.2.18",
     "@angular/compiler-cli": "^19.2.0",
-    "@types/express": "^4.17.17",
     "@types/jasmine": "~5.1.0",
-    "@types/node": "^18.18.0",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",

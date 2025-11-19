@@ -29,8 +29,6 @@ import java.util.Map;
 @Slf4j
 @Service
 public class AuthService {
-    @Value("local.folder.path")
-    private String localFolderPath;
     private final PasswordEncoder passwordEncoder;
     private final PersonRepository personRepository;
     private final PersonMapper personMapper;
@@ -96,7 +94,7 @@ public class AuthService {
         personRepository.save( personMapper.toEntity(person) );
 
         // Create folder for the new person
-        String basePath = localFolderPath;
+        String basePath = "";
         String folderName = person.getNationalId() + "_root";
 
         // to do call the storage manager

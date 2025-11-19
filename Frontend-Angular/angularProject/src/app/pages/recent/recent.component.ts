@@ -4,12 +4,12 @@ import { Router } from '@angular/router';
 import { RecentService, RecentItem } from '../../services/recent.service';
 import { FoldersService, Folder } from '../../services/folders.service';
 import { DocumentsService, DocumentItem } from '../../services/documents.service';
-import { DocumentSizePipe } from '../../pipes/file-size.pipe';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-recent',
   standalone: true,
-  imports: [CommonModule, DocumentSizePipe],
+  imports: [CommonModule],
   templateUrl: './recent.component.html',
   styleUrls: ['./recent.component.scss']
 })
@@ -23,7 +23,8 @@ export class RecentComponent implements OnInit {
     private recentService: RecentService,
     private foldersService: FoldersService,
     private docsService: DocumentsService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -55,8 +56,9 @@ export class RecentComponent implements OnInit {
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
+          this.error.set(null);
         },
-        error: () => this.error.set('Failed to download file')
+        error: (err) => this.error.set(this.errorHandler.getErrorMessage(err))
       });
     } else {
       const downloadUrl = this.foldersService.getDownloadUrl(item.id);

@@ -4,12 +4,12 @@ import { Router } from '@angular/router';
 import { FavoritesService, FavoriteItem } from '../../services/favorites.service';
 import { FoldersService } from '../../services/folders.service';
 import { DocumentsService } from '../../services/documents.service';
-import { DocumentSizePipe } from '../../pipes/file-size.pipe';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-favorites',
   standalone: true,
-  imports: [CommonModule, DocumentSizePipe],
+  imports: [CommonModule],
   templateUrl: './favorites.component.html',
   styleUrls: ['./favorites.component.scss']
 })
@@ -22,7 +22,8 @@ export class FavoritesComponent implements OnInit {
     private favoritesService: FavoritesService,
     private foldersService: FoldersService,
     private docsService: DocumentsService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -61,8 +62,9 @@ export class FavoritesComponent implements OnInit {
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
+          this.error.set(null);
         },
-        error: () => this.error.set('Failed to download file')
+        error: (err) => this.error.set(this.errorHandler.getErrorMessage(err))
       });
     } else {
       const downloadUrl = this.foldersService.getDownloadUrl(item.id);

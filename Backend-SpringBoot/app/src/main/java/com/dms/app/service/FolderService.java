@@ -26,8 +26,7 @@ public class FolderService {
 
     @Value("${spring.data.mongodb.page-size}")
     private int pageSize;
-    @Value("${local.folder.path}")
-    private String localFolderPath;
+
 
     private final FolderRepository folderRepository;
     private final UserFileService userFileService;
@@ -52,7 +51,7 @@ public class FolderService {
         try {
             // Construct folder path
             String uniqueId = UUID.randomUUID().toString();
-            String basePath = localFolderPath + "\\" + ownerId + "_root\\" + folder.getPath();
+            String basePath = ownerId + "_root\\" + folder.getPath();
             String folderPath = basePath + uniqueId;
 
             if ("root".equals(folder.getParentId())) {

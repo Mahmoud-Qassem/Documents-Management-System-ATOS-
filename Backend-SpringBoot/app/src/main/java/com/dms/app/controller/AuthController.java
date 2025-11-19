@@ -33,7 +33,6 @@ public class AuthController {
 
     @PostMapping("/refresh-token")
     public ResponseEntity<Map<String, Object>> refreshToken(@RequestBody Map<String, String> request) {
-        log.info("Refresh token request received ");
         Map<String, Object> response = new HashMap<>();
         String refreshToken = request.get("refreshToken");
 
@@ -45,8 +44,8 @@ public class AuthController {
         response =authService.refreshToken(refreshToken);
         // check if the response contains errorMessage as a key
         if(response.containsKey("errorMessage")){
-            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body(response);        }
-        log.info("Refresh token request processed");
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body(response);
+        }
 
         return ResponseEntity.ok(response);
     }

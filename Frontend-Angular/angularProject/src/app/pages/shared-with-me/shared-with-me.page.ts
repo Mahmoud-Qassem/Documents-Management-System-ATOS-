@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FileShareService, SharedFile, PageResponse, SharePermission } from '../../services/file-share.service';
 import { DocumentsService } from '../../services/documents.service';
-import { DocumentSizePipe } from '../../pipes/file-size.pipe';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-shared-with-me',
   standalone: true,
-  imports: [CommonModule, DocumentSizePipe],
+  imports: [CommonModule],
   templateUrl: './shared-with-me.page.html',
   styleUrls: ['./shared-with-me.page.scss']
 })
@@ -24,7 +24,8 @@ export class SharedWithMePage implements OnInit {
   constructor(
     private shareService: FileShareService,
     private docsService: DocumentsService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -41,7 +42,7 @@ export class SharedWithMePage implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set('Failed to load shared files');
+        this.error.set(this.errorHandler.getErrorMessage(err));
         this.loading.set(false);
         console.error('Error loading shared files', err);
       }
@@ -66,8 +67,9 @@ export class SharedWithMePage implements OnInit {
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
+          this.error.set(null);
         },
-        error: () => this.error.set('Failed to download file')
+        error: (err) => this.error.set(this.errorHandler.getErrorMessage(err))
       });
     }
   }

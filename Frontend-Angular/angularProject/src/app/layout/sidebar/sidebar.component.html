@@ -1,7 +1,10 @@
-<aside class="sidebar" [class.collapsed]="isCollapsed()" [class.pinned]="isPinned()" (mouseenter)="!isPinned() && isCollapsed.set(false)" (mouseleave)="!isPinned() && isCollapsed.set(true)">
+<aside class="sidebar" [class.collapsed]="isCollapsed()" [class.pinned]="isPinned()" [class.mobile-open]="isMobileSidebarOpen()" (mouseenter)="!isPinned() && isCollapsed.set(false)" (mouseleave)="!isPinned() && isCollapsed.set(true)">
   <div class="sidebar-header">
-    <button class="toggle-btn" (click)="toggleSidebar()" [title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Toggle sidebar">
+    <button class="toggle-btn desktop-toggle" (click)="toggleSidebar()" [title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Toggle sidebar">
       <i class="pi" [ngClass]="isCollapsed() ? 'pi-chevron-right' : 'pi-chevron-left'"></i>
+    </button>
+    <button class="close-btn mobile-close" (click)="closeMobileSidebar()" title="Close menu" aria-label="Close menu" *ngIf="isMobileSidebarOpen()">
+      <i class="pi pi-times"></i>
     </button>
     <span class="sidebar-title" *ngIf="!isCollapsed()">Navigation</span>
     <button class="pin-btn" (click)="togglePin()" [title]="isPinned() ? 'Unpin sidebar' : 'Pin sidebar'" aria-label="Pin sidebar" *ngIf="!isCollapsed()">

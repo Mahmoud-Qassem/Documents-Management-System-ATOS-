@@ -11,7 +11,7 @@ export interface PreviewResponse {
 
 @Injectable({ providedIn: 'root' })
 export class FilePreviewService {
-  private base = 'http://localhost:8080/api/files';
+  private base = 'http://mydms-app-env.eba-bwswqqze.eu-north-1.elasticbeanstalk.com/api/files';
 
   constructor(private http: HttpClient) { }
 

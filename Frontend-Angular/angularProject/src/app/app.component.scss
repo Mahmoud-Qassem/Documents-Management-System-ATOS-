@@ -9,6 +9,7 @@ app-navbar {
   display: block;
   flex-shrink: 0;
   z-index: 1000;
+  position: relative;
 }
 
 app-modal {
@@ -20,6 +21,7 @@ app-modal {
   min-height: 0;
   display: flex;
   overflow: hidden;
+  position: relative;
 }
 
 app-sidebar {
@@ -35,4 +37,42 @@ app-sidebar {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 500;
+  cursor: pointer;
+  animation: fadeIn var(--transition-normal) var(--easing-ease);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .app-wrapper {
+    position: relative;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-overlay {
+    animation: none;
+  }
 }

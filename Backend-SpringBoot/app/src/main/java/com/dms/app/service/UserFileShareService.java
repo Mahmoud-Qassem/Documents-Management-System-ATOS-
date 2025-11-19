@@ -3,6 +3,7 @@ package com.dms.app.service;
 import com.dms.app.dto.ShareRequest;
 import com.dms.app.dto.SharedFile;
 import com.dms.app.dto.SharedUserEntry;
+import com.dms.app.exception.UserNotFoundException;
 import com.dms.app.model.Person;
 import com.dms.app.model.UserFile;
 import com.dms.app.repository.PersonRepository;
@@ -12,9 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,7 @@ public class UserFileShareService {
     private final UserFileRepository userFileRepository;
 
 
-    public UserFile shareFile(String fileId, ShareRequest request) {
+    public UserFile shareFile(String fileId, ShareRequest request) throws UserNotFoundException, FileNotFoundException {
 
         UserFile file = userFileService.getFileById(fileId);
         String email = request.getTargetUserEmail();
@@ -38,7 +39,7 @@ public class UserFileShareService {
             targetUserId = person.getNationalId();
         }
         else{
-            throw new RuntimeException("User not found: " + email);
+            throw new UserNotFoundException("User not found: " + email);
         }
         final String id = targetUserId;
 
@@ -67,7 +68,7 @@ public class UserFileShareService {
     }
 
 
-    public UserFile removeShare(String fileId, String email) {
+    public UserFile removeShare(String fileId, String email)  throws UserNotFoundException, FileNotFoundException{
 
         UserFile file = userFileService.getFileById(fileId);
 
@@ -95,7 +96,7 @@ public class UserFileShareService {
     }
 
 
-    public UserFile updateSharePermission(String fileId, String email, String permission) {
+    public UserFile updateSharePermission(String fileId, String email, String permission) throws UserNotFoundException, FileNotFoundException {
 
         validatePermission(permission);
 
@@ -124,7 +125,7 @@ public class UserFileShareService {
     }
 
 
-    public List<SharedUserEntry> getSharedUsers(String fileId) {
+    public List<SharedUserEntry> getSharedUsers(String fileId) throws FileNotFoundException {
         UserFile file = userFileService.getFileById(fileId);
         return file.getSharedWith() == null ? List.of() : file.getSharedWith();
     }

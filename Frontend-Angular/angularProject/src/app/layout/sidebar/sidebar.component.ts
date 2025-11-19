@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { SidebarStateService } from '../../services/sidebar-state.service';
 
 interface NavItem {
   label: string;
@@ -23,9 +24,13 @@ interface NavSection {
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent {
+  private sidebarState = inject(SidebarStateService);
+  private router = inject(Router);
+
   isCollapsed = signal(true);
   isPinned = signal(false);
-  expandedSection = signal<string | null>(null);
+  expandedSections = signal<Set<string>>(new Set(['My Space', 'Management']));
+  isMobileSidebarOpen = this.sidebarState.isMobileSidebarOpen;
 
   sections: NavSection[] = [
     {
@@ -49,7 +54,6 @@ export class SidebarComponent {
     }
   ];
 
-  constructor(private router: Router) {}
 
   toggleSidebar() {
     this.isCollapsed.update(v => !v);
@@ -64,11 +68,23 @@ export class SidebarComponent {
 
   toggleSection(sectionTitle: string) {
     if (this.isCollapsed()) return;
-    this.expandedSection.update(v => v === sectionTitle ? null : sectionTitle);
+    // Always keep My Space and Management expanded
+    if (sectionTitle === 'My Space' || sectionTitle === 'Management') {
+      return;
+    }
+    this.expandedSections.update(sections => {
+      const newSections = new Set(sections);
+      if (newSections.has(sectionTitle)) {
+        newSections.delete(sectionTitle);
+      } else {
+        newSections.add(sectionTitle);
+      }
+      return newSections;
+    });
   }
 
   isSectionExpanded(sectionTitle: string): boolean {
-    return this.expandedSection() === sectionTitle && !this.isCollapsed();
+    return this.expandedSections().has(sectionTitle) && !this.isCollapsed();
   }
 
   navigate(item: NavItem) {
@@ -78,6 +94,11 @@ export class SidebarComponent {
     if (item.action) {
       item.action();
     }
+    this.closeMobileSidebar();
+  }
+
+  closeMobileSidebar() {
+    this.sidebarState.closeMobileSidebar();
   }
 
   getSectionIcon(sectionTitle: string): string {

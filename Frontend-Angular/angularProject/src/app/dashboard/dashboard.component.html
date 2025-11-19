@@ -24,8 +24,8 @@
         </form>
       </div>
 
-      <!-- Center: Toolbar Controls -->
-      <div class="toolbar-controls">
+      <!-- Center: Toolbar Controls (Desktop) -->
+      <div class="toolbar-controls desktop-controls">
         <!-- View Mode -->
         <div class="control-group">
           <button class="control-btn" [class.active]="viewMode()==='grid'" (click)="setAllView('grid')" title="Grid view" aria-label="Grid view">
@@ -86,6 +86,47 @@
         </div>
       </div>
 
+      <!-- Mobile Toolbar Menu -->
+      <div class="mobile-toolbar-menu">
+        <div class="menu-group">
+          <div class="dropdown-menu mobile-dropdown" *ngIf="sortMenuOpen()" (click)="$event.stopPropagation()">
+            <div class="dropdown-section">
+              <div class="section-title">View</div>
+              <div class="option-group">
+                <button class="dropdown-item" [class.active]="viewMode()==='grid'" (click)="setAllView('grid'); sortMenuOpen.set(false)">
+                  <i class="pi pi-th-large"></i> Grid
+                </button>
+                <button class="dropdown-item" [class.active]="viewMode()==='list'" (click)="setAllView('list'); sortMenuOpen.set(false)">
+                  <i class="pi pi-list"></i> List
+                </button>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-section">
+              <div class="section-title">Sort</div>
+              <div class="option-group">
+                <button class="dropdown-item" [class.active]="getSortField()==='name'" (click)="onSortChange('name')">Name</button>
+                <button class="dropdown-item" [class.active]="getSortField()==='size'" (click)="onSortChange('size')">Size</button>
+                <button class="dropdown-item" [class.active]="getSortField()==='type'" (click)="onSortChange('type')">Type</button>
+                <button class="dropdown-item" [class.active]="getSortField()==='createdAt'" (click)="onSortChange('createdAt')">Created</button>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-section">
+              <div class="section-title">Direction</div>
+              <div class="option-group">
+                <button class="dropdown-item" [class.active]="getSortDir()==='asc'" (click)="setSortDir('asc')">
+                  <i class="pi pi-arrow-up"></i> Ascending
+                </button>
+                <button class="dropdown-item" [class.active]="getSortDir()==='desc'" (click)="setSortDir('desc')">
+                  <i class="pi pi-arrow-down"></i> Descending
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Right: Add New Button -->
       <div class="add-new-section">
         <button class="add-new-btn primary" (click)="toggleAddNew()" [class.active]="addNewOpen()" title="Add new" aria-label="Add new">
@@ -116,18 +157,31 @@
 
   <!-- Active Area -->
   <section class="active-area">
-
-
-
-
     <div class="section-header">
       <h3 class="section-title">Folders & Files</h3>
     </div>
 
-    <!-- Combined grid -->
-    <p class="status-text" *ngIf="loadingCombined()">Loading items...</p>
-    <p class="error-text" *ngIf="combinedError()">{{ combinedError() }}</p>
+    <!-- Loading State -->
+    <div class="state-container" *ngIf="loadingCombined() && !inRecycleBin()">
+      <div class="loading-state">
+        <i class="pi pi-spinner loading-spinner"></i>
+        <p class="status-text">Loading items...</p>
+      </div>
+    </div>
 
+    <!-- Error State -->
+    <div class="state-container" *ngIf="combinedError() && !inRecycleBin()">
+      <div class="error-state">
+        <i class="pi pi-exclamation-circle error-icon"></i>
+        <p class="error-text">Unable to load items. Please try again.</p>
+        <p class="error-detail">{{ combinedError() }}</p>
+        <button class="retry-btn" (click)="loadActiveArea()" title="Retry">
+          <i class="pi pi-refresh"></i> Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- Combined grid -->
     <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingCombined() && !combinedError() && viewMode()==='grid'">
       <!-- Folders -->
       <div class="drive-item folder-card" [class.has-open-menu]="openMenuForId() === folder.id" *ngFor="let folder of (folders() || [])">
@@ -184,7 +238,11 @@
         </div>
       </div>
 
-      <div class="drive-item empty" *ngIf="(combinedItems() || []).length === 0">No items found</div>
+      <div class="drive-item empty" *ngIf="(combinedItems() || []).length === 0">
+        <i class="pi pi-inbox empty-icon"></i>
+        <p>No items found</p>
+        <p class="empty-hint">Start by creating a folder or uploading a file</p>
+      </div>
       <div></div>
     </div>
 
@@ -244,25 +302,37 @@
         </div>
       </div>
 
-      <div class="list-empty" *ngIf="(combinedItems() || []).length === 0">No items found</div>
-    </div>
-
-    <br>
-    <!-- <div class="drive-grid" *ngIf="!inRecycleBin() && !loadingCombined()">
-      <div class="drive-item folder-card" *ngIf="currentCrumb.id === null" (click)="openRecycleBin()">
-        <div class="folder-card-content" style="cursor: pointer;">
-          <div class="folder-icon-container" aria-hidden="true"><i class="pi pi-trash icon-svg icon-trash" style="font-size: 64px;"></i></div>
-          <div class="folder-info">
-            <div class="folder-name">Recycle Bin</div>
-            <div class="folder-size">Deleted items</div>
-          </div>
-        </div>
+      <div class="list-empty" *ngIf="(combinedItems() || []).length === 0">
+        <i class="pi pi-inbox empty-icon"></i>
+        <p>No items found</p>
+        <p class="empty-hint">Start by creating a folder or uploading a file</p>
       </div>
-    </div> -->
+    </div>
 
     <!-- Recycle Bin view -->
     <div *ngIf="inRecycleBin()">
-      <div class="drive-grid">
+      <!-- Loading State -->
+      <div class="state-container" *ngIf="loadingDeleted()">
+        <div class="loading-state">
+          <i class="pi pi-spinner loading-spinner"></i>
+          <p class="status-text">Loading deleted items...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="state-container" *ngIf="deletedError()">
+        <div class="error-state">
+          <i class="pi pi-exclamation-circle error-icon"></i>
+          <p class="error-text">Unable to load deleted items. Please try again.</p>
+          <p class="error-detail">{{ deletedError() }}</p>
+          <button class="retry-btn" (click)="loadDeletedItems()" title="Retry">
+            <i class="pi pi-refresh"></i> Retry
+          </button>
+        </div>
+      </div>
+
+      <!-- Deleted Folders -->
+      <div class="drive-grid" *ngIf="!loadingDeleted() && !deletedError()">
         <div class="drive-item folder-card" *ngFor="let folder of deletedFolders() || []">
           <button type="button" class="folder-menu-btn" (click)="$event.stopPropagation(); toggleRecycleBinMenu(folder.id)"
             aria-label="Open menu">⋯</button>
@@ -290,12 +360,9 @@
         </div>
       </div>
 
-      <div class="section-header">
+      <div class="section-header" *ngIf="!loadingDeleted() && !deletedError()">
         <h3 class="section-title">Deleted Files</h3>
       </div>
-
-      <p class="status-text" *ngIf="loadingDeleted()">Loading deleted files...</p>
-      <p class="error-text" *ngIf="deletedError()">{{ deletedError() }}</p>
 
       <div *ngIf="!loadingDeleted() && !deletedError()">
         <!-- Grid view -->
@@ -316,11 +383,15 @@
                 permanently</button>
             </div>
           </div>
-          <div class="drive-item empty" *ngIf="(deletedDocs() || []).length === 0">No deleted files found.</div>
+          <div class="drive-item empty" *ngIf="(deletedDocs() || []).length === 0">
+            <i class="pi pi-inbox empty-icon"></i>
+            <p>No deleted items</p>
+            <p class="empty-hint">All items you delete appear here temporarily</p>
+          </div>
         </div>
 
         <!-- List view -->
-        <div class="docs-list" *ngIf="binViewMode()==='list'">
+        <div class="docs-list" *ngIf="binViewMode()==='list' && (deletedDocs() || []).length > 0">
           <div class="list-header">
             <div class="list-col name">Name</div>
             <div class="list-col type">Type</div>
@@ -340,18 +411,13 @@
               </div>
             </div>
           </div>
-          <div class="list-empty" *ngIf="(deletedDocs() || []).length === 0">No deleted files found.</div>
-        </div>
-      </div>
 
-      <div class="content-spacer"></div>
-      <div class="pagination">
-        <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) === 0"
-          (click)="goToBinPage((binDocsPage()?.number || 0) - 1)">Prev</button>
-        <button class="page-btn" *ngFor="let p of listPages(binDocsPage()?.totalPages || 0); let i = index"
-          [class.active]="i === (binDocsPage()?.number || 0)" (click)="goToBinPage(i)">{{ i + 1 }}</button>
-        <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) >= ((binDocsPage()?.totalPages || 1) - 1)"
-          (click)="goToBinPage((binDocsPage()?.number || 0) + 1)">Next</button>
+          <div class="list-empty" *ngIf="(deletedDocs() || []).length === 0">
+            <i class="pi pi-inbox empty-icon"></i>
+            <p>No deleted items</p>
+            <p class="empty-hint">All items you delete appear here temporarily</p>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -359,6 +425,17 @@
 
 
     <div class="content-spacer"></div>
+
+    <!-- Recycle Bin pagination -->
+    <div class="pagination" *ngIf="inRecycleBin()">
+      <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) === 0"
+        (click)="goToBinPage((binDocsPage()?.number || 0) - 1)">Prev</button>
+      <button class="page-btn" *ngFor="let p of listPages(binDocsPage()?.totalPages || 0); let i = index"
+        [class.active]="i === (binDocsPage()?.number || 0)" (click)="goToBinPage(i)">{{ i + 1 }}</button>
+      <button class="page-btn" [disabled]="(binDocsPage()?.number || 0) >= ((binDocsPage()?.totalPages || 1) - 1)"
+        (click)="goToBinPage((binDocsPage()?.number || 0) + 1)">Next</button>
+    </div>
+
     <!-- Combined pagination -->
     <div class="pagination" *ngIf="!inRecycleBin()">
       <button class="page-btn" [disabled]="(combinedQuery().page) === 0"
@@ -438,8 +515,12 @@
     <p>Are you sure you want to permanently delete <strong>{{ confirmPermanentDelete()?.name }}</strong>? This action cannot be undone.</p>
   </app-modal>
 
-  <app-modal [visible]="!!shareTarget()" title="Share" (close)="shareTarget.set(null)" (confirm)="confirmShare()">
+  <app-modal [visible]="!!shareTarget()" title="Share" (close)="shareTarget.set(null); shareError.set(null)" (confirm)="confirmShare()">
     <div class="share-form">
+      <div class="error-alert" *ngIf="shareError()">
+        <i class="pi pi-exclamation-circle"></i>
+        <span>{{ shareError() }}</span>
+      </div>
       <p class="share-text">Share <strong>{{ shareTarget()?.name }}</strong> with:</p>
       <label class="field">
         <span class="label">Email address</span>
@@ -490,14 +571,27 @@
   </app-modal>
 
   <app-modal [visible]="uploadDialogOpen()" title="Upload document" (close)="closeUploadDialog()" (confirm)="confirmUpload()" [closeDisabled]="uploading()">
-    <label class="field"><span class="label">Choose file</span>
-      <input type="file" class="input" (change)="onUploadFileChange($event)" [disabled]="uploading()" />
-    </label>
-    <div class="upload-progress" *ngIf="uploading()">
-      <div class="progress-bar-container">
-        <div class="progress-bar" [style.width.%]="uploadProgress()"></div>
+    <div class="upload-error-container" *ngIf="uploadError()">
+      <div class="upload-error-header">
+        <i class="pi pi-exclamation-circle"></i>
+        <span>Error Uploading the File</span>
       </div>
-      <div class="progress-text">{{ uploadProgress() }}%</div>
+      <p class="upload-error-message">Try again later!</p>
+      <button class="upload-retry-btn" (click)="retryUpload()">Try Again</button>
+    </div>
+    <div *ngIf="!uploadError()">
+      <label class="field"><span class="label">Choose file</span>
+        <input type="file" class="input" (change)="onUploadFileChange($event)" [disabled]="uploading()" />
+      </label>
+      <div class="upload-progress" *ngIf="uploading()">
+        <div class="loading-buckets-container">
+          <div class="loading-bucket"></div>
+          <div class="loading-bucket"></div>
+          <div class="loading-bucket"></div>
+          <div class="loading-bucket"></div>
+        </div>
+        <p class="upload-status">Uploading your file...</p>
+      </div>
     </div>
   </app-modal>
 </div>

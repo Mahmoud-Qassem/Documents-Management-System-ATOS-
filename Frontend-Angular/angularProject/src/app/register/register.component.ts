@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { ErrorHandlerService } from '../services/error-handler.service';
 
 interface RegisterPayload {
   firstName: string;
@@ -31,7 +32,8 @@ export class RegisterComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private auth: AuthService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -70,16 +72,14 @@ submit() {
     },
     error: (err: any) => {
       this.loading = false;
-      if (err?.error && typeof err.error === 'object') {
-        const fe = err.error.fieldErrors || err.error.fieldError || null;
-        if (fe && typeof fe === 'object') {
-          this.serverErrors = fe;
-          return;
-        }
-        this.error = err.error.message || err.error.statusMsg || err.message || 'Registration failed';
+      // Check for field-level errors first
+      const fieldErrors = this.errorHandler.getFieldErrors(err);
+      if (Object.keys(fieldErrors).length > 0) {
+        this.serverErrors = fieldErrors;
         return;
       }
-      this.error = err?.message || 'Registration failed';
+      // Get meaningful error message from backend
+      this.error = this.errorHandler.getErrorMessage(err);
     }
   });
 }

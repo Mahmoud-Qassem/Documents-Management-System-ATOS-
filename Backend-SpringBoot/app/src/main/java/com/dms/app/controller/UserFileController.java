@@ -21,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class UserFileController {
 
     // sort by name, type, size
 
-    ///  SearchCriteria  to do
+    ///  SearchCriteria  to do -> done
     // api -> localhost:8080/api/files/search
     @PostMapping("/search")
     public ResponseEntity<Page<UserFile>> searchFiles(
@@ -56,10 +57,9 @@ public class UserFileController {
 
     @GetMapping("/{fileId}/preview")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'PREVIEW')")
-    public ResponseEntity<?> previewFile(@PathVariable String fileId, Authentication authentication) {
+    public ResponseEntity<?> previewFile(@PathVariable String fileId)throws FileNotFoundException {
 
-        String nationalId = getNationalId(authentication);
-        PreviewResponse result = userFileService.previewFile(fileId, nationalId);
+        PreviewResponse result = userFileService.previewFile(fileId);
 
         if (result instanceof Base64Preview base64) {
             return ResponseEntity.ok(base64);
@@ -102,8 +102,7 @@ public class UserFileController {
 
     @GetMapping("/{fileId}")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'READ')")
-    public ResponseEntity<UserFile> getFileById(@PathVariable String fileId, Authentication authentication) {
-        String nationalId = getNationalId(authentication);
+    public ResponseEntity<UserFile> getFileById(@PathVariable String fileId) throws FileNotFoundException {
         UserFile file = userFileService.getFileById(fileId);
         return ResponseEntity.ok(file);
     }
@@ -131,9 +130,8 @@ public class UserFileController {
 
     @GetMapping("/download/{fileId}")
     @PreAuthorize("hasPermission(#fileId, 'USER_FILE', 'DOWNLOAD')")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String fileId, Authentication authentication) {
-        String nationalId = getNationalId(authentication);
-        Resource file = userFileService.downloadFile(fileId, nationalId);
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileId)throws FileNotFoundException, IOException {
+        Resource file = userFileService.downloadFile(fileId);
         ResponseEntity<Resource> response = ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")

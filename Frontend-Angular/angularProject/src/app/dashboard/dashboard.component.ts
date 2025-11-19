@@ -10,6 +10,7 @@ import { RecentService } from '../services/recent.service';
 import { DownloadsService } from '../services/downloads.service';
 import { FavoritesService } from '../services/favorites.service';
 import { FileShareService, SharePermission } from '../services/file-share.service';
+import { ErrorHandlerService } from '../services/error-handler.service';
 
 interface Crumb { id: string | null; name: string; }
 
@@ -59,6 +60,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   shareTarget: WritableSignal<{ type: 'folder'|'document'; id: string; name: string } | null> = signal(null);
   shareEmail = signal('');
   sharePermission = signal<SharePermission>('READ');
+  shareError = signal<string | null>(null);
 
   // Custom dialogs
   createFolderOpen = signal(false);
@@ -69,6 +71,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   uploadFile: WritableSignal<File | null> = signal(null);
   uploadProgress = signal(0);
   uploading = signal(false);
+  uploadError = signal<string | null>(null);
 
   // States
   pathStack: WritableSignal<Crumb[]> = signal([{ id: null, name: 'My Drive' }]);
@@ -133,7 +136,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private recentService: RecentService,
     private downloadsService: DownloadsService,
     private favoritesService: FavoritesService,
-    private shareService: FileShareService
+    private shareService: FileShareService,
+    private errorHandler: ErrorHandlerService
   ) {
     // Auto-focus rename folder input when modal opens
     effect(() => {
@@ -373,12 +377,14 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   openUploadDialog() {
     if (this.currentCrumb.id === null) return;
     this.uploadFile.set(null);
+    this.uploadError.set(null);
     this.uploadDialogOpen.set(true);
   }
 
   closeUploadDialog() {
     this.uploadDialogOpen.set(false);
     this.uploadFile.set(null);
+    this.uploadError.set(null);
   }
 
   onUploadFileChange(event: Event) {
@@ -392,6 +398,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     if (!file || this.currentCrumb.id === null) { this.closeUploadDialog(); return; }
     this.uploading.set(true);
     this.uploadProgress.set(0);
+    this.uploadError.set(null);
     this.docsApi.uploadDocumentWithProgress(this.currentCrumb.id, file).subscribe({
       next: (event) => {
         if (typeof event === 'number') {
@@ -403,12 +410,54 @@ export class DashboardComponent implements OnInit, AfterViewInit {
           this.uploadProgress.set(0);
         }
       },
-      error: () => {
+      error: (error) => {
         this.uploading.set(false);
         this.uploadProgress.set(0);
-        this.closeUploadDialog();
+        const errorMessage = this.getUploadErrorMessage(error);
+        this.uploadError.set(errorMessage);
       }
     });
+  }
+
+  retryUpload() {
+    this.uploadError.set(null);
+    this.uploadFile.set(null);
+  }
+
+  private getUploadErrorMessage(error: any): string {
+    if (!error) {
+      return 'An unknown error occurred during upload.';
+    }
+
+    // Handle HTTP error responses
+    if (error.status) {
+      switch (error.status) {
+        case 413:
+          return 'File is too large. Please upload a smaller file.';
+        case 400:
+          return 'Invalid file format or request.';
+        case 401:
+          return 'Unauthorized. Please log in again.';
+        case 403:
+          return 'You do not have permission to upload files here.';
+        case 404:
+          return 'Folder not found. Please try again.';
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          return 'Server error. Please try again later.';
+        default:
+          return error.error?.message || `Upload failed with error code ${error.status}.`;
+      }
+    }
+
+    // Handle other errors
+    if (error.message) {
+      return error.message;
+    }
+
+    return 'An error occurred during file upload. Please try again.';
   }
 
 
@@ -900,10 +949,10 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.shareTarget.set(null);
         this.shareEmail.set('');
         this.sharePermission.set('READ');
+        this.shareError.set(null);
       },
       error: (err) => {
-        console.error('Failed to share file', err);
-        alert('Failed to share file. Please try again.');
+        this.shareError.set(this.errorHandler.getErrorMessage(err));
       }
     });
   }
